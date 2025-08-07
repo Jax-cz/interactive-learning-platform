@@ -91,8 +91,10 @@ const fetchLessons = async () => {
       query = query.eq('level', filter.level);
     }
     if (filter.language !== 'all') {
-      query = query.eq('language_support', filter.language);
-    }
+  // Capitalize first letter to match database format
+  const capitalizedLanguage = filter.language.charAt(0).toUpperCase() + filter.language.slice(1);
+  query = query.eq('language_support', capitalizedLanguage);
+}
 
     const { data, error } = await query;
 

@@ -59,7 +59,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">Interactive Learning Platform</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-blue-600">
+                Easy Language Learning Interactive Learning Platform
+              </h1>
             </div>
             <div className="space-x-4">
               <Link
@@ -67,12 +69,6 @@ export default function HomePage() {
                 className="text-gray-600 hover:text-gray-900 font-medium"
               >
                 Sign In
-              </Link>
-              <Link
-                href="/register"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Get Started
               </Link>
             </div>
           </div>
@@ -163,6 +159,16 @@ export default function HomePage() {
                   <li>• Advanced topics</li>
                 </ul>
               </button>
+            </div>
+
+            {/* Get Started Button - Desktop: Below cards, Mobile: At bottom */}
+            <div className="mt-12 flex justify-center">
+              <Link
+                href="/samples"
+                className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 font-medium text-lg transition-colors shadow-lg hover:shadow-xl"
+              >
+                Try Free Samples
+              </Link>
             </div>
           </div>
         )}

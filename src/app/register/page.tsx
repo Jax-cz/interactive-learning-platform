@@ -9,10 +9,69 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [promoCode, setPromoCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [promoStatus, setPromoStatus] = useState<{
+    valid: boolean;
+    message: string;
+    details?: any;
+  } | null>(null);
+  const [checkingPromo, setCheckingPromo] = useState(false);
   const router = useRouter();
+
+  // Validate promo code in real-time
+  const validatePromoCode = async (code: string) => {
+    if (!code.trim()) {
+      setPromoStatus(null);
+      return;
+    }
+
+    setCheckingPromo(true);
+    try {
+      const response = await fetch('/api/promo-code/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() })
+      });
+
+      const result = await response.json();
+
+      if (result.valid) {
+        setPromoStatus({
+          valid: true,
+          message: `${code.toUpperCase()} applied: ${result.free_days} days free!`,
+          details: result
+        });
+      } else {
+        setPromoStatus({
+          valid: false,
+          message: result.error || 'Invalid promo code'
+        });
+      }
+    } catch (error) {
+      setPromoStatus({
+        valid: false,
+        message: 'Unable to validate promo code'
+      });
+    } finally {
+      setCheckingPromo(false);
+    }
+  };
+
+  // Handle promo code input changes
+  const handlePromoCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const code = e.target.value;
+    setPromoCode(code);
+    
+    // Debounced validation (validate after user stops typing)
+    setTimeout(() => {
+      if (e.target.value === code) { // Only validate if value hasn't changed
+        validatePromoCode(code);
+      }
+    }, 500);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,21 +97,55 @@ export default function RegisterPage() {
       return;
     }
 
-    // Attempt registration
-    const { user, error: signUpError } = await signUp(email, password);
-
-    if (signUpError) {
-      setError(signUpError);
+    // Check if promo code is invalid (if provided)
+    if (promoCode.trim() && promoStatus && !promoStatus.valid) {
+      setError('Please enter a valid promo code or leave it blank');
       setLoading(false);
       return;
     }
 
-    if (user) {
-      setSuccess(true);
-      // Don't redirect immediately - show success message first
-    }
+    try {
+      // Attempt registration
+      const { user, error: signUpError } = await signUp(email, password);
 
-    setLoading(false);
+      if (signUpError) {
+        setError(signUpError);
+        setLoading(false);
+        return;
+      }
+
+      if (user) {
+        // If promo code was provided and valid, apply it
+        if (promoCode.trim() && promoStatus?.valid) {
+          try {
+            const applyResponse = await fetch('/api/promo-code/apply', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                code: promoCode.trim(),
+                userId: user.id 
+              })
+            });
+
+            const applyResult = await applyResponse.json();
+            
+            if (!applyResponse.ok) {
+              console.warn('Promo code application failed:', applyResult.error);
+              // Don't fail registration, just log the issue
+            }
+          } catch (promoError) {
+            console.warn('Promo code application error:', promoError);
+            // Don't fail registration, just log the issue
+          }
+        }
+
+        setSuccess(true);
+      }
+    } catch (error) {
+      setError('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
@@ -69,9 +162,16 @@ export default function RegisterPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
                 Registration Successful!
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-4">
                 We've sent you a confirmation email. Please check your inbox and click the confirmation link to activate your account.
               </p>
+              {promoStatus?.valid && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                  <p className="text-green-800 text-sm font-medium">
+                    🎉 {promoStatus.message}
+                  </p>
+                </div>
+              )}
               <div className="space-y-3">
                 <Link
                   href="/login"
@@ -189,10 +289,67 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Promo Code Section */}
+            <div className="border-t pt-6">
+              <div className="flex items-center mb-3">
+                <span className="text-sm font-medium text-gray-700">Have a promo code?</span>
+                <span className="ml-2 text-xs text-gray-500">(Optional)</span>
+              </div>
+              
+              <div className="relative">
+                <input
+                  id="promo-code"
+                  type="text"
+                  value={promoCode}
+                  onChange={handlePromoCodeChange}
+                  placeholder="Enter promo code"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+                {checkingPromo && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="animate-spin h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Promo Code Status */}
+              {promoStatus && (
+                <div className={`mt-2 p-3 rounded-lg text-sm ${
+                  promoStatus.valid 
+                    ? 'bg-green-50 border border-green-200 text-green-800' 
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                  <div className="flex items-center">
+                    {promoStatus.valid ? (
+                      <svg className="h-4 w-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    )}
+                    <span className="font-medium">{promoStatus.message}</span>
+                  </div>
+                  {promoStatus.valid && promoStatus.details && (
+                    <div className="mt-2 text-xs">
+                      <p>• {promoStatus.details.remaining_uses} uses remaining</p>
+                      {promoStatus.details.description && (
+                        <p>• {promoStatus.details.description}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || checkingPromo}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
@@ -204,7 +361,14 @@ export default function RegisterPage() {
                     Creating Account...
                   </>
                 ) : (
-                  'Create Account'
+                  <>
+                    Create Account
+                    {promoStatus?.valid && (
+                      <span className="ml-2 text-xs bg-green-500 px-2 py-1 rounded-full">
+                        +{promoStatus.details?.free_days} days free
+                      </span>
+                    )}
+                  </>
                 )}
               </button>
             </div>

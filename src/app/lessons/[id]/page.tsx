@@ -502,18 +502,40 @@ function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: Mul
 
 // Sequence Process Component
 interface SequenceProcessComponentProps {
-  sequenceSteps: string[];
+  sequenceContent: string[] | undefined;
+  sequenceInstructions: string | undefined;  // ADD THIS - separate instructions
   onComplete: () => void;
   isMultiLanguage: boolean;
 }
 
-function SequenceProcessComponent({ sequenceSteps, onComplete, isMultiLanguage }: SequenceProcessComponentProps) {
+function SequenceProcessComponent({ sequenceContent, sequenceInstructions, onComplete, isMultiLanguage }: SequenceProcessComponentProps) {
   const [userOrder, setUserOrder] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
 
+  // Simplified parsing - your parser already separates instructions and steps
+  const parseSequenceContent = (steps: string[] | undefined, instructions: string | undefined) => {
+    console.log('Sequence steps received:', steps);
+    console.log('Sequence instructions received:', instructions);
+    
+    // Safety check for undefined or empty content
+    if (!steps || !Array.isArray(steps) || steps.length === 0) {
+      return {
+        instructions: instructions || 'Put the steps in the correct order',
+        steps: []
+      };
+    }
+
+    return {
+      instructions: instructions || 'Put the steps in the correct order',
+      steps: steps // Your parser already provides clean step array
+    };
+  };
+
   const parseStep = (step: string) => {
     if (!isMultiLanguage) return { english: step, translation: '' };
+    
+    // Handle multi-language format: [English]-[Translation]
     const match = step.match(/^\[(.+?)\]-\[(.+?)\]$/);
     return {
       english: match?.[1] || step,
@@ -521,8 +543,14 @@ function SequenceProcessComponent({ sequenceSteps, onComplete, isMultiLanguage }
     };
   };
 
+  const { instructions, steps: sequenceSteps } = parseSequenceContent(sequenceContent, sequenceInstructions);
+
   // Parse and shuffle steps initially
   const [shuffledSteps] = useState(() => {
+    if (sequenceSteps.length === 0) {
+      return [];
+    }
+
     const steps = sequenceSteps.map((step, index) => ({
       id: index,
       originalIndex: index,
@@ -578,15 +606,40 @@ function SequenceProcessComponent({ sequenceSteps, onComplete, isMultiLanguage }
     return { correct, total: sequenceSteps.length };
   };
 
-  const isComplete = userOrder.length === sequenceSteps.length;
+  const isComplete = userOrder.length === sequenceSteps.length && sequenceSteps.length > 0;
+
+  // Show error state if no content available
+  if (!sequenceContent || !Array.isArray(sequenceContent) || sequenceSteps.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-800 font-medium">No sequence content available</p>
+          <p className="text-yellow-700 text-sm mt-1">
+            This lesson may not have sequence exercises configured.
+          </p>
+        </div>
+        <button
+          onClick={onComplete}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Continue to Next Exercise →
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="p-4 bg-blue-50 rounded-lg">
         <p className="text-blue-800 font-medium">Instructions:</p>
         <p className="text-blue-700 text-sm mt-1">
-          Drag the steps into the correct order from first to last. You can also click steps to add them to your sequence.
+          Drag the steps into the correct order described below. You can also click steps to add them to your sequence.
         </p>
+        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+          <p className="text-yellow-800 font-medium text-sm">
+            {instructions}
+          </p>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -1327,7 +1380,8 @@ interface LessonData {
     trueFalse: Array<{question: string, answer: boolean}>;
     findInText?: Array<{clue: string, paragraph: number, answer: string}>;
     grammarFocus?: Array<{sentence: string, answer: string}>;
-    sequenceProcess?: string[];
+    sequenceProcess?: string[] | undefined;
+    sequenceInstructions?: string | undefined;
     vocabularyPractice?: Array<{sentence: string, answer: string}>;
     summary: string;
   };
@@ -1476,6 +1530,14 @@ export default function LessonPage() {
         </div>
       </div>
     );
+  }
+
+if (!lesson) {
+    return <div className="p-8">Loading lesson...</div>;
+  }
+
+  if (!lesson.content_data) {
+    return <div className="p-8">Lesson content not found...</div>;
   }
 
   return (
@@ -1680,16 +1742,18 @@ export default function LessonPage() {
                   />
                 )}
 
-                {exercises[currentExercise]?.type === 'sequenceProcess' && (
-                  <SequenceProcessComponent
-                    sequenceSteps={lesson.content_data.sequenceProcess || []}
-                    isMultiLanguage={isMultiLanguage}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
-                      setCurrentExercise(currentExercise + 1);
-                    }}
-                  />
-                )}
+               
+{exercises[currentExercise]?.type === 'sequenceProcess' && (
+  <SequenceProcessComponent
+    sequenceContent={lesson?.content_data?.sequenceProcess}          // The steps array
+    sequenceInstructions={lesson?.content_data?.sequenceInstructions} // The instructions string
+    isMultiLanguage={isMultiLanguage}
+    onComplete={() => {
+      markExerciseComplete(currentExercise);
+      setCurrentExercise(currentExercise + 1);
+    }}
+  />
+)}
 
                 {exercises[currentExercise]?.type === 'vocabularyPractice' && (
                   <VocabularyPracticeComponent
