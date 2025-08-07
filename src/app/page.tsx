@@ -195,11 +195,11 @@ export default function HomePage() {
                 className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-orange-300 text-left"
               >
                 <div className="w-full h-48 bg-orange-100 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-6xl">📰</span>
+                  <span className="text-8xl">📰</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">ESL</h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  English through current news and real-world topics
+                  English through News articles and real-world topics
                 </p>
                 <div className="text-xs text-gray-500">
                   <p>Perfect for: Adults</p>
@@ -213,14 +213,14 @@ export default function HomePage() {
                 className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-300 text-left"
               >
                 <div className="w-full h-48 bg-purple-100 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-6xl">🔬</span>
+                  <span className="text-8xl">🔬</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">CLIL English</h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  Learn science subjects through English
+                  Learn English through Science subjects
                 </p>
                 <div className="text-xs text-gray-500">
-                  <p>Perfect for: Teenagers</p>
+                  <p>Perfect for: Teenagers and Adults</p>
                   <p>Focus: Science + English</p>
                 </div>
               </button>
@@ -234,14 +234,14 @@ export default function HomePage() {
                   Popular
                 </div>
                 <div className="w-full h-48 bg-blue-100 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-6xl">🌍</span>
+                  <span className="text-8xl">🌍</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">CLIL + Language Support</h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  Science subjects with vocabulary support in your native language
+                  English and Science with vocabulary support in your native language
                 </p>
                 <div className="text-xs text-gray-500">
-                  <p>Perfect for: Teenagers</p>
+                  <p>Perfect for: Teenagers and Adults</p>
                   <p>Focus: Science + English + Native language</p>
                 </div>
               </button>

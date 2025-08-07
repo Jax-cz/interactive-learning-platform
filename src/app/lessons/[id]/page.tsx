@@ -543,6 +543,17 @@ function SequenceProcessComponent({ sequenceContent, sequenceInstructions, onCom
     };
   };
 
+const parseInstructions = (instructions: string) => {
+  if (!isMultiLanguage || !instructions) return { english: instructions || 'Put the steps in the correct order', translation: '' };
+  
+  // Handle multi-language format: [English]-[Translation]
+  const match = instructions.match(/^\[(.+?)\]-\[(.+?)\]$/);
+  return {
+    english: match?.[1] || instructions,
+    translation: match?.[2] || ''
+  };
+};
+
   const { instructions, steps: sequenceSteps } = parseSequenceContent(sequenceContent, sequenceInstructions);
 
   // Parse and shuffle steps initially
@@ -635,11 +646,23 @@ function SequenceProcessComponent({ sequenceContent, sequenceInstructions, onCom
         <p className="text-blue-700 text-sm mt-1">
           Drag the steps into the correct order described below. You can also click steps to add them to your sequence.
         </p>
-        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-          <p className="text-yellow-800 font-medium text-sm">
-            {instructions}
+       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+  {(() => {
+    const parsedInstructions = parseInstructions(instructions);
+    return (
+      <div>
+        <p className="text-yellow-800 font-medium text-sm">
+          {parsedInstructions.english}
+        </p>
+        {isMultiLanguage && parsedInstructions.translation && (
+          <p className="text-yellow-700 text-sm italic mt-1">
+            {parsedInstructions.translation}
           </p>
-        </div>
+        )}
+      </div>
+    );
+  })()}
+</div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
