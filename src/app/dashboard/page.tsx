@@ -41,6 +41,7 @@ type Lesson = {
   image_filename: string;
   slug: string;
   tags: string[];
+  vocabulary_data: any;
 };
 
 type UserProgress = {
@@ -62,6 +63,241 @@ type ProgressionData = {
   is_caught_up: boolean;
 };
 
+type VocabularyData = {
+  vocabularyWords: Array<{
+    word: string;
+    definition: string;
+    lessonTitle: string;
+    contentType: string;
+    completedAt: string;
+  }>;
+  reviewAvailable: boolean;
+  sourceLessons: number;
+};
+
+type StreakData = {
+  currentStreak: number;
+  thisWeekCompleted: number;
+  weeklyCompletionRate: number;
+  weeksSinceJoin: number;
+};
+
+// VOCABULARY REVIEW MODAL COMPONENT
+interface VocabularyReviewModalProps {
+  vocabularyWords: Array<{
+    word: string;
+    definition: string;
+    lessonTitle: string;
+    contentType: string;
+    completedAt: string;
+  }>;
+  onClose: () => void;
+  onComplete: (score: number) => void;
+}
+
+const VocabularyReviewModal: React.FC<VocabularyReviewModalProps> = ({ vocabularyWords, onClose, onComplete }) => {
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showResult, setShowResult] = useState<boolean>(false);
+  const [score, setScore] = useState<number>(0);
+  const [results, setResults] = useState<Array<{
+    word: string;
+    correct: boolean;
+    selectedAnswer: string;
+    correctAnswer: string;
+    lessonTitle: string;
+  }>>([]);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
+
+  const currentWord = vocabularyWords[currentIndex];
+
+  useEffect(() => {
+    if (currentWord) {
+      const correctDefinition = currentWord.definition;
+      const wrongDefinitions = vocabularyWords
+        .filter(w => w.word !== currentWord.word)
+        .map(w => w.definition)
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+
+      const allOptions = [correctDefinition, ...wrongDefinitions];
+      setShuffledOptions(allOptions.sort(() => 0.5 - Math.random()));
+    }
+  }, [currentIndex, currentWord, vocabularyWords]);
+
+  const handleAnswerSelect = (definition: string) => {
+    setSelectedAnswer(definition);
+    setShowResult(true);
+
+    const isCorrect = definition === currentWord.definition;
+    const newResult = {
+      word: currentWord.word,
+      correct: isCorrect,
+      selectedAnswer: definition,
+      correctAnswer: currentWord.definition,
+      lessonTitle: currentWord.lessonTitle
+    };
+
+    setResults(prev => [...prev, newResult]);
+
+    if (isCorrect) {
+      setScore(prev => prev + 1);
+    }
+
+    setTimeout(() => {
+      if (currentIndex < vocabularyWords.length - 1) {
+        setCurrentIndex(prev => prev + 1);
+        setSelectedAnswer(null);
+        setShowResult(false);
+      } else {
+        onComplete(Math.round((score + (isCorrect ? 1 : 0)) / vocabularyWords.length * 100));
+      }
+    }, 2000);
+  };
+
+  const getScoreColor = (percentage: number): string => {
+    if (percentage >= 80) return 'text-green-600';
+    if (percentage >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getScoreMessage = (percentage: number): string => {
+    if (percentage >= 80) return 'Excellent! 🎉';
+    if (percentage >= 60) return 'Good work! 👍';
+    return 'Keep practicing! 📚';
+  };
+
+  if (!currentWord) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Vocabulary Review</h2>
+              <p className="text-gray-600">Question {currentIndex + 1} of {vocabularyWords.length}</p>
+            </div>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+          </div>
+          <div className="mt-4">
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((currentIndex + 1) / vocabularyWords.length) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="text-center mb-8">
+            <h3 className="text-3xl font-bold text-gray-900 mb-4">{currentWord.word}</h3>
+            <p className="text-gray-600">From: {currentWord.lessonTitle}</p>
+            <p className="text-lg text-gray-800 mt-4 font-medium">Choose the correct definition:</p>
+          </div>
+
+          <div className="space-y-3">
+            {shuffledOptions.map((option, index) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrect = option === currentWord.definition;
+              
+              let buttonClass = "w-full p-4 text-left rounded-lg border-2 transition-all ";
+              
+              if (!showResult) {
+                buttonClass += "border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer";
+              } else {
+                if (isSelected && isCorrect) {
+                  buttonClass += "border-green-500 bg-green-50 text-green-800";
+                } else if (isSelected && !isCorrect) {
+                  buttonClass += "border-red-500 bg-red-50 text-red-800";
+                } else if (isCorrect) {
+                  buttonClass += "border-green-500 bg-green-50 text-green-800";
+                } else {
+                  buttonClass += "border-gray-200 bg-gray-50 text-gray-600";
+                }
+              }
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => !showResult && handleAnswerSelect(option)}
+                  disabled={showResult}
+                  className={buttonClass}
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{option}</span>
+                    {showResult && isSelected && (
+                      <span className="ml-2">{isCorrect ? '✓' : '✗'}</span>
+                    )}
+                    {showResult && !isSelected && isCorrect && (
+                      <span className="ml-2 text-green-600">✓</span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {showResult && (
+            <div className="mt-6 text-center">
+              <div className={`text-xl font-bold ${selectedAnswer === currentWord.definition ? 'text-green-600' : 'text-red-600'}`}>
+                {selectedAnswer === currentWord.definition ? 'Correct! 🎉' : 'Not quite! 📚'}
+              </div>
+              {selectedAnswer !== currentWord.definition && (
+                <p className="text-gray-600 mt-2">
+                  The correct answer is: <strong>{currentWord.definition}</strong>
+                </p>
+              )}
+              <div className="mt-4">
+                <div className="inline-flex items-center space-x-2 text-sm text-gray-500">
+                  <span>Score: {score}/{currentIndex + 1}</span>
+                  <span>•</span>
+                  <span>{Math.round((score / (currentIndex + 1)) * 100)}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentIndex === vocabularyWords.length - 1 && showResult && (
+            <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Review Complete!</h3>
+                <div className={`text-4xl font-bold mb-2 ${getScoreColor(Math.round((score / vocabularyWords.length) * 100))}`}>
+                  {Math.round((score / vocabularyWords.length) * 100)}%
+                </div>
+                <p className={`text-xl mb-4 ${getScoreColor(Math.round((score / vocabularyWords.length) * 100))}`}>
+                  {getScoreMessage(Math.round((score / vocabularyWords.length) * 100))}
+                </p>
+                <p className="text-gray-600">You got {score} out of {vocabularyWords.length} words correct</p>
+                
+                <div className="mt-6 text-left">
+                  <h4 className="font-bold text-gray-900 mb-3">Review Summary:</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {results.map((result, index) => (
+                      <div key={index} className={`p-2 rounded text-sm ${result.correct ? 'bg-green-100' : 'bg-red-100'}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{result.word}</span>
+                          <span>{result.correct ? '✓' : '✗'}</span>
+                        </div>
+                        {!result.correct && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            Correct: {result.correctAnswer}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -69,27 +305,163 @@ export default function Dashboard() {
   const [progress, setProgress] = useState<UserProgress[]>([]);
   const [contentAccess, setContentAccess] = useState<any>(null);
   const [progressionData, setProgressionData] = useState<ProgressionData | null>(null);
+  const [vocabularyData, setVocabularyData] = useState<VocabularyData>({ vocabularyWords: [], reviewAvailable: false, sourceLessons: 0 });
+  const [streakData, setStreakData] = useState<StreakData | null>(null);
+  const [showVocabReview, setShowVocabReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // LEARNING STREAK CALCULATOR
+  const calculateLearningStreak = (progressData: UserProgress[], userProfile: UserProfile | null): StreakData => {
+    if (!progressData.length || !userProfile) {
+      return { currentStreak: 0, thisWeekCompleted: 0, weeklyCompletionRate: 0, weeksSinceJoin: 1 };
+    }
+
+    const joinDate = new Date(userProfile.created_at);
+    const currentDate = new Date();
+    const weeksSinceJoin = Math.floor((currentDate.getTime() - joinDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+    
+    // Group completions by week
+    const completionsByWeek: { [key: number]: number } = {};
+    progressData.filter(p => p.is_completed && p.completed_at).forEach(completion => {
+      const completionDate = new Date(completion.completed_at!);
+      const weekNumber = Math.floor((completionDate.getTime() - joinDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+      
+      if (!completionsByWeek[weekNumber]) {
+        completionsByWeek[weekNumber] = 0;
+      }
+      completionsByWeek[weekNumber]++;
+    });
+
+    // Calculate current streak
+    let currentStreak = 0;
+    for (let week = weeksSinceJoin; week >= 1; week--) {
+      if (completionsByWeek[week] && completionsByWeek[week] > 0) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+
+    const thisWeekCompleted = completionsByWeek[weeksSinceJoin] || 0;
+    const totalWeeksWithContent = Math.max(1, weeksSinceJoin);
+    const weeklyCompletionRate = Math.round((progressData.filter(p => p.is_completed).length / totalWeeksWithContent) * 10) / 10;
+
+    return {
+      currentStreak,
+      thisWeekCompleted,
+      weeklyCompletionRate,
+      weeksSinceJoin
+    };
+  };
+
+  // VOCABULARY REVIEW SYSTEM
+  const getVocabularyForReview = async (userId: string, access: any): Promise<VocabularyData> => {
+    try {
+      const { data: recentProgress, error: progressError } = await supabase
+        .from('user_progress')
+        .select(`
+          lesson_id,
+          completed_at,
+          lessons!inner (
+            id,
+            title,
+            content_type,
+            vocabulary_data,
+            level
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('is_completed', true)
+        .order('completed_at', { ascending: false })
+        .limit(4);
+
+      if (progressError) throw progressError;
+
+      if (!recentProgress || recentProgress.length === 0) {
+        return { vocabularyWords: [], reviewAvailable: false, sourceLessons: 0 };
+      }
+
+      // Filter lessons based on user's content access
+      const accessibleLessons = recentProgress.filter((progress: any) => {
+        const lesson = progress.lessons;
+        if (!lesson) return false;
+        
+        if (access.canAccessESL && access.canAccessCLIL) {
+          return true;
+        } else if (access.canAccessESL) {
+          return lesson.content_type === 'esl';
+        } else if (access.canAccessCLIL) {
+          return lesson.content_type === 'clil';
+        }
+        return false;
+      });
+
+      // Extract vocabulary from accessible lessons
+      let allVocabulary: Array<{
+        word: string;
+        definition: string;
+        lessonTitle: string;
+        contentType: string;
+        completedAt: string;
+      }> = [];
+      
+      accessibleLessons.forEach((progress: any) => {
+        const lesson = progress.lessons;
+        if (lesson && lesson.vocabulary_data) {
+          try {
+            const vocabData = typeof lesson.vocabulary_data === 'string' 
+              ? JSON.parse(lesson.vocabulary_data) 
+              : lesson.vocabulary_data;
+            
+            if (Array.isArray(vocabData)) {
+              vocabData.forEach((item: any) => {
+                allVocabulary.push({
+                  word: item.word,
+                  definition: item.definition,
+                  lessonTitle: lesson.title,
+                  contentType: lesson.content_type,
+                  completedAt: progress.completed_at
+                });
+              });
+            }
+          } catch (parseError) {
+            console.error('Error parsing vocabulary data:', parseError);
+          }
+        }
+      });
+
+      const shuffled = allVocabulary.sort(() => 0.5 - Math.random());
+      const selectedWords = shuffled.slice(0, Math.min(6, shuffled.length));
+
+      return {
+        vocabularyWords: selectedWords,
+        reviewAvailable: selectedWords.length > 0,
+        sourceLessons: accessibleLessons.length
+      };
+
+    } catch (error) {
+      console.error('Error getting vocabulary for review:', error);
+      return { vocabularyWords: [], reviewAvailable: false, sourceLessons: 0 };
+    }
+  };
+
   useEffect(() => {
     loadDashboardData();
     
-    // Set up session monitoring
     const sessionCheck = setInterval(async () => {
       const isValid = await isSessionValid();
       if (!isValid) {
         console.log('Session expired, redirecting to login...');
         router.push('/login');
       }
-    }, 5 * 60 * 1000); // Check every 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => clearInterval(sessionCheck);
   }, []);
 
   useEffect(() => {
-    // Monitor auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         router.push('/login');
@@ -101,7 +473,6 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      // Check if user is authenticated
       const { user: currentUser, error: userError } = await getCurrentUser();
       
       if (userError || !currentUser) {
@@ -111,7 +482,6 @@ export default function Dashboard() {
 
       setUser(currentUser);
 
-      // Get user profile - create if doesn't exist
       const { profile: userProfile, error: profileError } = await getUserProfile(currentUser.id);
       
       if (profileError || !userProfile) {
@@ -149,19 +519,16 @@ export default function Dashboard() {
         setProfile(userProfile);
       }
 
-      // Get content access permissions
       const access = await getContentAccess(currentUser.id);
       setContentAccess(access);
 
-      // Load user progress first
       await loadProgress(currentUser.id);
-
-      // Calculate progression data
       const progression = await calculateProgressionData(currentUser.id, userProfile);
       setProgressionData(progression);
-
-      // Get available lessons based on progression
       await loadLessonsWithProgression(currentUser.id, access, progression);
+
+      // Load enhanced features
+      await loadEnhancedData(currentUser.id, access, userProfile);
 
     } catch (err: any) {
       console.error('Dashboard loading error:', err);
@@ -171,9 +538,18 @@ export default function Dashboard() {
     }
   };
 
+  const loadEnhancedData = async (userId: string, access: any, userProfile: UserProfile | null) => {
+    // Calculate learning streak
+    const streak = calculateLearningStreak(progress, userProfile);
+    setStreakData(streak);
+
+    // Load vocabulary for review
+    const vocabData = await getVocabularyForReview(userId, access);
+    setVocabularyData(vocabData);
+  };
+
   const calculateProgressionData = async (userId: string, userProfile: UserProfile | null): Promise<ProgressionData> => {
     try {
-      // Get total completed lessons (Cross-Level Credit system)
       const { data: completedLessons, error: progressError } = await supabase
         .from('user_progress')
         .select('lesson_id, is_completed')
@@ -183,13 +559,10 @@ export default function Dashboard() {
       if (progressError) throw progressError;
 
       const totalCompleted = completedLessons?.length || 0;
-
-      // Calculate weeks since user joined
       const joinDate = new Date(userProfile?.created_at || new Date());
       const currentDate = new Date();
       const weeksSinceJoin = Math.floor((currentDate.getTime() - joinDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
-      // Get current week number (latest lesson week)
       const { data: latestLesson } = await supabase
         .from('lessons')
         .select('week_number')
@@ -199,33 +572,22 @@ export default function Dashboard() {
         .single();
 
       const currentWeek = latestLesson?.week_number || 1;
-
-      // Calculate available lessons based on our agreed system
       const starterPack = 5;
       let availableLessons = starterPack;
-
-      // Determine unlock rate (2 for catch-up, 1 for maintenance)
       const weeksBehind = currentWeek - weeksSinceJoin;
-      const unlockRate = weeksBehind > 4 ? 2 : 1; // Catch-up mode if more than 4 weeks behind
-
-      // Calculate additional unlocks
-      const additionalWeeks = Math.max(0, weeksSinceJoin - 1); // First week is starter pack
+      const unlockRate = weeksBehind > 4 ? 2 : 1;
+      const additionalWeeks = Math.max(0, weeksSinceJoin - 1);
       availableLessons += additionalWeeks * unlockRate;
-
-      // Cap at current week content
       availableLessons = Math.min(availableLessons, currentWeek);
 
-      // Check if user has completed enough lessons to maintain unlock rate
       const lessonsNeededForUnlock = Math.max(0, availableLessons - 3 - totalCompleted);
       const canUnlockMore = lessonsNeededForUnlock === 0;
 
-      // Calculate days until next unlock
       const nextMonday = new Date();
       nextMonday.setDate(nextMonday.getDate() + (7 - nextMonday.getDay() + 1) % 7);
       const daysUntilNextUnlock = Math.ceil((nextMonday.getTime() - currentDate.getTime()) / (24 * 60 * 60 * 1000));
 
-      // Check if user is caught up
-      const isCaughtUp = availableLessons >= currentWeek - 2; // Within 2 weeks of current
+      const isCaughtUp = availableLessons >= currentWeek - 2;
 
       return {
         total_completed: totalCompleted,
@@ -261,7 +623,6 @@ export default function Dashboard() {
         .eq('is_published', true)
         .order('week_number', { ascending: true });
 
-      // Filter based on subscription
       if (access.canAccessESL && access.canAccessCLIL) {
         // Complete plan - show all
       } else if (access.canAccessESL) {
@@ -269,11 +630,9 @@ export default function Dashboard() {
       } else if (access.canAccessCLIL) {
         query = query.eq('content_type', 'clil');
       } else {
-        // Free user - only samples
         query = query.eq('is_sample', true);
       }
 
-      // Filter by user's preferred level (if set)
       if (profile?.preferred_level) {
         query = query.eq('level', profile.preferred_level);
       }
@@ -282,10 +641,9 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      // Sort lessons by week number and limit to available lessons
       const sortedLessons = (data || [])
         .sort((a, b) => a.week_number - b.week_number)
-        .slice(0, progression.available_lessons + 5); // Show a few locked ones too
+        .slice(0, progression.available_lessons + 5);
 
       setLessons(sortedLessons);
     } catch (err: any) {
@@ -468,6 +826,159 @@ export default function Dashboard() {
     });
   };
 
+  // CONTINUE LEARNING COMPONENT
+  const ContinueLearningSection = () => {
+    if (!lessons.length || !progressionData) return null;
+
+    const nextLesson = lessons.find((lesson, index) => {
+      const isAvailable = index < progressionData.available_lessons;
+      const lessonProgress = progress.find(p => p.lesson_id === lesson.id);
+      const isCompleted = lessonProgress?.is_completed || false;
+      return isAvailable && !isCompleted;
+    });
+
+    if (!nextLesson) {
+      return (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trophy className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-green-900 mb-2">All Caught Up! 🎉</h2>
+            <p className="text-green-700 mb-4">
+              You've completed all available lessons. New content unlocks in {progressionData.days_until_next_unlock} days!
+            </p>
+            <button
+              onClick={() => router.push('/lessons')}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+            >
+              Review Completed Lessons
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Play className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-blue-900 mb-1">Continue Learning</h2>
+              <p className="text-blue-700 font-medium">
+                {String(nextLesson.week_number).padStart(3, '0')}. {nextLesson.title}
+              </p>
+              <div className="flex items-center space-x-3 mt-2">
+                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                  nextLesson.content_type === 'esl' 
+                    ? 'bg-orange-100 text-orange-800' 
+                    : 'bg-purple-100 text-purple-800'
+                }`}>
+                  {nextLesson.content_type.toUpperCase()}
+                </span>
+                <span className="text-sm text-blue-600">
+                  ⏱️ {nextLesson.estimated_duration} min
+                </span>
+                <span className="text-sm text-blue-600 capitalize">
+                  📚 {nextLesson.level}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push(`/lesson/${nextLesson.id}`)}
+            className="px-8 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+          >
+            Start Lesson →
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // VOCABULARY REVIEW SECTION
+  const VocabularyReviewSection = () => {
+    if (!vocabularyData.reviewAvailable) return null;
+
+    return (
+      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-xl p-6 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-purple-900">Vocabulary Review</h3>
+              <p className="text-purple-700 text-sm">
+                Review {vocabularyData.vocabularyWords.length} words from your recent lessons
+              </p>
+              <p className="text-purple-600 text-xs mt-1">
+                From {vocabularyData.sourceLessons} recent lesson{vocabularyData.sourceLessons > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowVocabReview(true)}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium transition-colors"
+          >
+            Start Review (2 min)
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // WEEKLY STREAK SECTION
+  const WeeklyStreakSection = () => {
+    if (!streakData) return null;
+
+    return (
+      <div className="bg-white rounded-xl p-6 shadow-sm border">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
+          <Flame className="h-5 w-5 text-orange-500" />
+          <span>Learning Streak</span>
+        </h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-orange-600 mb-1">
+              {streakData.currentStreak}
+            </div>
+            <p className="text-sm text-gray-600">Week Streak</p>
+            <p className="text-xs text-gray-500">consecutive weeks</p>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-600 mb-1">
+              {streakData.thisWeekCompleted}
+            </div>
+            <p className="text-sm text-gray-600">This Week</p>
+            <p className="text-xs text-gray-500">lessons completed</p>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Weekly Average:</span>
+            <span className="font-medium text-gray-900">{streakData.weeklyCompletionRate} lessons/week</span>
+          </div>
+        </div>
+
+        {streakData.currentStreak >= 2 && (
+          <div className="mt-3 p-3 bg-orange-50 rounded-lg">
+            <p className="text-sm text-orange-800 font-medium">
+              🔥 You're on fire! Keep your streak going!
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Early returns for loading and error states
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -498,6 +1009,7 @@ export default function Dashboard() {
     );
   }
 
+  // Calculate data for main dashboard
   const badge = getSubscriptionBadge();
   const averageScore = progress.length > 0 
     ? Math.round(progress.reduce((sum, p) => sum + (p.percentage_score || 0), 0) / progress.length)
@@ -505,51 +1017,58 @@ export default function Dashboard() {
   const totalTimeSpent = progress.reduce((sum, p) => sum + (p.time_spent || 0), 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-2xl font-bold text-blue-600">
-                Interactive Learning
-              </Link>
-              <span className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${
-                badge.color === 'green' ? 'bg-green-50 text-green-800 border-green-200' :
-                badge.color === 'blue' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                badge.color === 'purple' ? 'bg-purple-50 text-purple-800 border-purple-200' :
-                badge.color === 'orange' ? 'bg-orange-50 text-orange-800 border-orange-200' :
-                'bg-red-50 text-red-800 border-red-200'
-              }`}>
-                {badge.text.toUpperCase()} PLAN
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600 hidden md:block">
-                Welcome, {user?.email?.split('@')[0]}
-              </span>
-              <button
-                onClick={handleSignOut}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                Sign Out
-              </button>
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center space-x-4">
+                <Link href="/" className="text-2xl font-bold text-blue-600">
+                  Interactive Learning
+                </Link>
+                <span className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${
+                  badge.color === 'green' ? 'bg-green-50 text-green-800 border-green-200' :
+                  badge.color === 'blue' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                  badge.color === 'purple' ? 'bg-purple-50 text-purple-800 border-purple-200' :
+                  badge.color === 'orange' ? 'bg-orange-50 text-orange-800 border-orange-200' :
+                  'bg-red-50 text-red-800 border-red-200'
+                }`}>
+                  {badge.text.toUpperCase()} PLAN
+                </span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600 hidden md:block">
+                  Welcome, {user?.email?.split('@')[0]}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Your Learning Journey 🚀
-          </h1>
-          <p className="text-xl text-gray-600">
-            Track your progress and unlock new content as you learn
-          </p>
-        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
+          {/* Welcome Section */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Your Learning Journey 🚀
+            </h1>
+            <p className="text-xl text-gray-600">
+              Track your progress and unlock new content as you learn
+            </p>
+          </div>
+
+          {/* CONTINUE LEARNING - Prominent placement */}
+          <ContinueLearningSection />
+
+          {/* VOCABULARY REVIEW - When available */}
+          <VocabularyReviewSection />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -660,289 +1179,18 @@ export default function Dashboard() {
                     <BookOpen className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Completed</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {progressionData?.total_completed || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Star className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Avg Score</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {averageScore}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Clock className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Time Spent</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {formatTime(totalTimeSpent)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-orange-100 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Available</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {progressionData?.available_lessons || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Your Learning Path */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
-                <Play className="h-5 w-5 text-blue-600" />
-                <span>Your Learning Path</span>
-              </h2>
-              
-              {lessons.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <BookOpen className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No lessons available</h3>
-                  <p className="text-gray-600">Check back soon for new content!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {lessons.slice(0, 8).map((lesson, index) => {
-                    const lessonProgress = getProgressForLesson(lesson.id);
-                    const status = getLessonStatus(lesson, index);
-                    const StatusIcon = status.icon;
-
-                    return (
-                      <div 
-                        key={lesson.id} 
-                        className={`border rounded-lg p-4 transition-all ${
-                          status.status === 'available' 
-                            ? 'hover:shadow-md cursor-pointer border-blue-200 bg-blue-50' 
-                            : status.status === 'completed'
-                            ? 'border-green-200 bg-green-50'
-                            : status.status === 'coming_soon'
-                            ? 'border-yellow-200 bg-yellow-50'
-                            : 'border-gray-200 bg-gray-50'
-                        }`}
-                        onClick={() => status.status === 'available' && router.push(`/lesson/${lesson.id}`)}
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${status.bg}`}>
-                            <StatusIcon className={`h-6 w-6 ${status.color}`} />
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <h3 className={`font-medium truncate ${
-                                status.status === 'available' ? 'text-blue-900' : 
-                                status.status === 'completed' ? 'text-green-900' :
-                                status.status === 'coming_soon' ? 'text-yellow-900' :
-                                'text-gray-500'
-                              }`}>
-                                {String(lesson.week_number).padStart(3, '0')}. {lesson.title}
-                              </h3>
-                              <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                                lesson.content_type === 'esl' 
-                                  ? 'bg-orange-100 text-orange-800' 
-                                  : 'bg-purple-100 text-purple-800'
-                              }`}>
-                                {lesson.content_type.toUpperCase()}
-                              </span>
-                              <span className="px-2 py-1 text-xs rounded-full font-medium bg-gray-100 text-gray-700 capitalize">
-                                {lesson.level}
-                              </span>
-                            </div>
-                            
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
-                              <span>⏱️ {lesson.estimated_duration} min</span>
-                              <span>📂 {lesson.topic_category}</span>
-                              {lesson.language_support && lesson.language_support !== 'English' && (
-                                <span>🌐 + {lesson.language_support}</span>
-                              )}
-                            </div>
-
-                            {status.status === 'completed' && lessonProgress && (
-                              <div className="mt-2 flex items-center space-x-2">
-                                <span className="text-sm text-green-600 font-medium">
-                                  Completed • Score: {lessonProgress.percentage_score}%
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {formatDate(lessonProgress.completed_at || '')}
-                                </span>
-                              </div>
-                            )}
-
-                            {status.status === 'coming_soon' && progressionData && (
-                              <div className="mt-2">
-                                <span className="text-sm text-yellow-700 font-medium">
-                                  Unlocks in {progressionData.days_until_next_unlock} day{progressionData.days_until_next_unlock > 1 ? 's' : ''}
-                                </span>
-                              </div>
-                            )}
-
-                            {status.status === 'locked' && progressionData && (
-                              <div className="mt-2">
-                                <span className="text-sm text-gray-500">
-                                  Complete {progressionData.lessons_needed_for_unlock} more lesson{progressionData.lessons_needed_for_unlock > 1 ? 's' : ''} to unlock
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center">
-                            {status.status === 'available' && (
-                              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                                Start Lesson
-                              </button>
-                            )}
-                            {status.status === 'completed' && (
-                              <button 
-                                onClick={() => router.push(`/lesson/${lesson.id}`)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                              >
-                                Review
-                              </button>
-                            )}
-                            {(status.status === 'coming_soon' || status.status === 'locked') && (
-                              <div className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg font-medium">
-                                {status.status === 'coming_soon' ? 'Coming Soon' : 'Locked'}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  
-                  {lessons.length > 8 && (
-                    <div className="text-center pt-4">
-                      <Link 
-                        href="/lessons" 
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        View All Lessons →
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            
-            {/* Subscription Status */}
-            {profile?.subscription_tier === 'free' ? (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center space-x-2">
-                  <Trophy className="h-5 w-5" />
-                  <span>Unlock Full Access</span>
-                </h3>
-                <p className="text-blue-700 mb-4 text-sm">
-                  You're on the free plan with sample lessons only. Upgrade to access our complete learning system!
-                </p>
-                <div className="space-y-2 text-sm text-blue-600 mb-4">
-                  <p>• Complete lesson progression system</p>
-                  <p>• ESL News + CLIL Science content</p>
-                  <p>• Multi-language support options</p>
-                  <p>• Progress tracking & achievements</p>
-                </div>
-                <Link 
-                  href="/subscribe" 
-                  className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                >
-                  Choose Your Plan
-                </Link>
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  <span>Subscription</span>
-                </h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-600">Current Plan</p>
-                    <p className="font-medium text-gray-900 capitalize">
-                      {profile?.subscription_tier?.replace('_', ' ')}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      profile?.subscription_status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {profile?.subscription_status}
-                    </span>
-                  </div>
-                  
-                  <div className="pt-3 space-y-2">
-                    <button 
-                      onClick={() => router.push('/subscribe?upgrade=true')}
-                      className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                    >
-                      Change Plan
-                    </button>
-                    
-                    <button 
-                      onClick={handleBillingPortal}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                    >
-                      Manage Billing
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Learning Level */}
-            {profile && (
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                  <Settings className="h-5 w-5 text-blue-600" />
-                  <span>Learning Level</span>
-                </h3>
-                
-                <div className="space-y-3">
-                  <div>
                     <p className="text-sm text-gray-600">Current Level</p>
                     <p className="font-medium text-gray-900 capitalize">
-                      {profile.preferred_level || 'Not set'}
+                      {profile?.preferred_level || 'Not set'}
                     </p>
                   </div>
                   
                   <div className="space-y-2">
                     <button
                       onClick={() => handleLevelChange('beginner')}
-                      disabled={profile.preferred_level === 'beginner'}
+                      disabled={profile?.preferred_level === 'beginner'}
                       className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        profile.preferred_level === 'beginner'
+                        profile?.preferred_level === 'beginner'
                           ? 'bg-blue-100 text-blue-800 cursor-not-allowed'
                           : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
@@ -952,9 +1200,9 @@ export default function Dashboard() {
                     
                     <button
                       onClick={() => handleLevelChange('intermediate')}
-                      disabled={profile.preferred_level === 'intermediate'}
+                      disabled={profile?.preferred_level === 'intermediate'}
                       className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        profile.preferred_level === 'intermediate'
+                        profile?.preferred_level === 'intermediate'
                           ? 'bg-blue-100 text-blue-800 cursor-not-allowed'
                           : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
@@ -968,7 +1216,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-            )}
+            )
 
             {/* Achievements */}
             <div className="bg-white rounded-xl p-6 shadow-sm border">
@@ -1046,12 +1294,20 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+            </div>
 
-          {/* Quick Actions */}
+            {/* Quick Actions */}
             <div className="bg-white rounded-xl p-6 shadow-sm border">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
               
               <div className="space-y-3">
+                <Link 
+                  href="/lessons" 
+                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Browse All Lessons</span>
+                </Link>
                                 
                 <Link 
                   href="/analytics" 
@@ -1083,6 +1339,262 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+
+     {/* VOCABULARY REVIEW MODAL */}
+      {showVocabReview && (
+        <VocabularyReviewModal 
+          vocabularyWords={vocabularyData.vocabularyWords}
+          onClose={() => setShowVocabReview(false)}
+          onComplete={(score) => {
+            setShowVocabReview(false);
+            console.log('Vocabulary review completed with score:', score);
+            // You could save this score to the database here if desired
+          }}
+        />
+      )}
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              
+              {/* WEEKLY STREAK - New component */}
+              <WeeklyStreakSection />
+
+              {/* Subscription Status */}
+              {profile?.subscription_tier === 'free' ? (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center space-x-2">
+                    <Trophy className="h-5 w-5" />
+                    <span>Unlock Full Access</span>
+                  </h3>
+                  <p className="text-blue-700 mb-4 text-sm">
+                    You're on the free plan with sample lessons only. Upgrade to access our complete learning system!
+                  </p>
+                  <div className="space-y-2 text-sm text-blue-600 mb-4">
+                    <p>• Complete lesson progression system</p>
+                    <p>• ESL News + CLIL Science content</p>
+                    <p>• Multi-language support options</p>
+                    <p>• Progress tracking & achievements</p>
+                  </div>
+                  <Link 
+                    href="/subscribe" 
+                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                  >
+                    Choose Your Plan
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                    <span>Subscription</span>
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Current Plan</p>
+                      <p className="font-medium text-gray-900 capitalize">
+                        {profile?.subscription_tier?.replace('_', ' ')}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-gray-600">Status</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        profile?.subscription_status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {profile?.subscription_status}
+                      </span>
+                    </div>
+                    
+                    <div className="pt-3 space-y-2">
+                      <button 
+                        onClick={() => router.push('/subscribe?upgrade=true')}
+                        className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                      >
+                        Change Plan
+                      </button>
+                      
+                      <button 
+                        onClick={handleBillingPortal}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                      >
+                        Manage Billing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Learning Level */}
+              {profile && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                    <Settings className="h-5 w-5 text-blue-600" />
+                    <span>Learning Level</span>
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Current Level</p>
+                      <p className="font-medium text-gray-900 capitalize">
+                        {profile?.preferred_level || 'Not set'}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleLevelChange('beginner')}
+                        disabled={profile?.preferred_level === 'beginner'}
+                        className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+                          profile?.preferred_level === 'beginner'
+                            ? 'bg-blue-100 text-blue-800 cursor-not-allowed'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Switch to Beginner
+                      </button>
+                      
+                      <button
+                        onClick={() => handleLevelChange('intermediate')}
+                        disabled={profile?.preferred_level === 'intermediate'}
+                        className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
+                          profile?.preferred_level === 'intermediate'
+                            ? 'bg-blue-100 text-blue-800 cursor-not-allowed'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Switch to Intermediate
+                      </button>
+                    </div>
+                    
+                    <p className="text-xs text-gray-500">
+                      Level changes preserve your completion credit across all content
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Achievements */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                  <Award className="h-5 w-5 text-blue-600" />
+                  <span>Achievements</span>
+                </h3>
+                
+                <div className="space-y-3">
+                  {(progressionData?.total_completed || 0) >= 1 && (
+                    <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
+                      <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Star className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">First Lesson!</p>
+                        <p className="text-sm text-gray-600">Started your learning journey</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {(progressionData?.total_completed || 0) >= 5 && (
+                    <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
+                      <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Flame className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Getting Started!</p>
+                        <p className="text-sm text-gray-600">Completed 5 lessons</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(progressionData?.total_completed || 0) >= 10 && (
+                    <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                      <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Trophy className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">Lesson Master!</p>
+                        <p className="text-sm text-gray-600">Completed 10 lessons</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {averageScore >= 90 && (progressionData?.total_completed || 0) >= 3 && (
+                    <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <TrendingUp className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">High Achiever!</p>
+                        <p className="text-sm text-gray-600">90%+ average score</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {progressionData?.is_caught_up && (
+                    <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">All Caught Up!</p>
+                        <p className="text-sm text-gray-600">Reached current content</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!progressionData?.total_completed && (
+                    <div className="text-center py-4">
+                      <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-600 text-sm">Complete lessons to unlock achievements!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+                
+                <div className="space-y-3">
+                  <Link 
+                    href="/lessons" 
+                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span>Browse All Lessons</span>
+                  </Link>
+                                  
+                  <Link 
+                    href="/analytics" 
+                    className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span>View Analytics</span>
+                  </Link>
+                  
+                  {profile?.subscription_tier !== 'free' && (
+                    <button 
+                      onClick={handleBillingPortal}
+                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      <span>Billing & Account</span>
+                    </button>
+                  )}
+                  
+                  <Link 
+                    href="/subscribe" 
+                    className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    <span>{profile?.subscription_tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+   </>
   );
 }

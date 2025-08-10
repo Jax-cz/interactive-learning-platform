@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 
 interface Lesson {
   id: string;
@@ -9,63 +11,121 @@ interface Lesson {
   level: string;
   content_type: string;
   language_support: string;
-  week_number: string;
-  image_filename: string | null;
+  image_filename: string;
+  week_number: number;
 }
 
 export default function SamplesPage() {
-  const [sampleLessons, setSampleLessons] = useState<Lesson[]>([]);
+  const [samples, setSamples] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedContentType, setSelectedContentType] = useState<string>('all');
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const searchParams = useSearchParams();
+  
+  // Get parameters from URL
+  const level = searchParams.get('level') || 'beginner';
+  const content = searchParams.get('content') || 'esl';
+  const language = searchParams.get('language') || 'english';
 
   useEffect(() => {
-    fetchSampleLessons();
-  }, []);
+    fetchSamples();
+  }, [level, content, language]);
 
-  const fetchSampleLessons = async () => {
+  const fetchSamples = async () => {
     try {
-      // This will fetch lessons with week_number = '000' (your sample lessons)
-      const response = await fetch('/api/lessons/samples');
-      if (response.ok) {
-        const lessons = await response.json();
-        setSampleLessons(lessons);
+      setLoading(true);
+      
+      let query = supabase
+        .from('lessons')
+        .select('*')
+        .eq('is_sample', true)
+        .eq('level', level.toLowerCase())
+        .order('content_type', { ascending: true });
+
+      // Filter based on content choice
+      if (content === 'esl') {
+        query = query.eq('content_type', 'esl');
+        setSelectedPlan('ESL Plan');
+      } else if (content === 'clil-plus') {
+        query = query
+          .eq('content_type', 'clil')
+          .eq('language_support', language); // Use exact capitalization from database
+        setSelectedPlan('CLIL + Language Support');
+      } else if (content === 'complete-plan') {
+        // For complete plan, get both ESL and CLIL
+        const { data: eslSamples } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('is_sample', true)
+          .eq('level', level.toLowerCase())
+          .eq('content_type', 'esl')
+          .limit(1);
+
+        const { data: clilSamples } = await supabase
+          .from('lessons')
+          .select('*')
+          .eq('is_sample', true)
+          .eq('level', level.toLowerCase())
+          .eq('content_type', 'clil')
+          .eq('language_support', language) // Use exact capitalization from database
+          .limit(1);
+
+        const combinedSamples = [...(eslSamples || []), ...(clilSamples || [])];
+        setSamples(combinedSamples);
+        setSelectedPlan('Complete Plan');
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching samples:', error);
+      } else {
+        setSamples(data || []);
       }
     } catch (error) {
-      console.error('Error fetching sample lessons:', error);
+      console.error('Error fetching samples:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredLessons = sampleLessons.filter(lesson => {
-    const contentTypeMatch = selectedContentType === 'all' || lesson.content_type === selectedContentType;
-    const levelMatch = selectedLevel === 'all' || lesson.level === selectedLevel;
-    return contentTypeMatch && levelMatch;
-  });
-
-  const getContentTypeColor = (contentType: string) => {
-    switch (contentType) {
-      case 'esl': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'clil': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getContentTypeIcon = (contentType: string) => {
-    switch (contentType) {
+  const getPlanIcon = () => {
+    switch (content) {
       case 'esl': return '📰';
-      case 'clil': return '🔬';
+      case 'clil-plus': return '🔬';
+      case 'complete-plan': return '🌍';
       default: return '📚';
     }
   };
 
+  const getPlanColor = () => {
+    switch (content) {
+      case 'esl': return 'orange';
+      case 'clil-plus': return 'purple';
+      case 'complete-plan': return 'blue';
+      default: return 'gray';
+    }
+  };
+
+  const getLanguageFlag = (lang: string) => {
+    const codes: { [key: string]: string } = {
+      'Czech': 'CZ',
+      'German': 'DE', 
+      'French': 'FR',
+      'Spanish': 'ES',
+      'Polish': 'PL',
+      'English': 'EN'
+    };
+    return codes[lang] || 'XX';
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading sample lessons...</p>
+          <p className="text-gray-600">Loading your personalized samples...</p>
         </div>
       </div>
     );
@@ -77,12 +137,9 @@ export default function SamplesPage() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="text-blue-600 hover:text-blue-800">
-                ← Back to Home
-              </Link>
+            <div className="flex items-center">
               <h1 className="text-xl md:text-2xl font-bold text-blue-600">
-                Free Sample Lessons
+                Easy Language Learning Interactive Learning Platform
               </h1>
             </div>
             <div className="space-x-4">
@@ -92,120 +149,103 @@ export default function SamplesPage() {
               >
                 Sign In
               </Link>
-              <Link
-                href="/register"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Subscribe Now
-              </Link>
             </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
+        {/* Plan Summary */}
         <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Try Our Interactive Lessons Free
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Experience the quality of our content before you subscribe. These sample lessons showcase our interactive approach to learning English through real-world content.
-          </p>
-          
-          {/* Value Proposition */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-lg">
-              <div className="text-4xl mb-3">⚡</div>
-              <h3 className="font-bold text-gray-900 mb-2">Interactive Exercises</h3>
-              <p className="text-gray-600 text-sm">Drag-and-drop, matching, and comprehension activities</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-lg">
-              <div className="text-4xl mb-3">🌍</div>
-              <h3 className="font-bold text-gray-900 mb-2">Real-World Content</h3>
-              <p className="text-gray-600 text-sm">Current news and science topics, not artificial textbook content</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-lg">
-              <div className="text-4xl mb-3">📱</div>
-              <h3 className="font-bold text-gray-900 mb-2">Mobile Optimized</h3>
-              <p className="text-gray-600 text-sm">Perfect experience on phones, tablets, and computers</p>
-            </div>
+          <div className={`inline-flex items-center px-6 py-3 rounded-full bg-${getPlanColor()}-100 text-${getPlanColor()}-800 mb-4`}>
+            <span className="text-2xl mr-2">{getPlanIcon()}</span>
+            <span className="font-semibold">{selectedPlan}</span>
+            {language !== 'english' && (
+              <>
+                <span className="mx-2">•</span>
+                <span className="text-lg mr-1">{getLanguageFlag(language)}</span>
+                <span className="capitalize">{language} Support</span>
+              </>
+            )}
           </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Try Your Free Samples
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-2">
+            Experience the complete interactive lesson - no signup required!
+          </p>
+          <p className="text-lg text-gray-500 capitalize">
+            {level} Level • Complete Lesson Experience
+          </p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-8 justify-center">
-          <select
-            value={selectedContentType}
-            onChange={(e) => setSelectedContentType(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Content Types</option>
-            <option value="esl">ESL (News Topics)</option>
-            <option value="clil">CLIL (Science Topics)</option>
-          </select>
-          
-          <select
-            value={selectedLevel}
-            onChange={(e) => setSelectedLevel(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Levels</option>
-            <option value="beginner">Beginner - Lower Intermediate</option>
-            <option value="intermediate">Intermediate - Upper Intermediate</option>
-          </select>
-        </div>
-
-        {/* Sample Lessons Grid */}
-        {filteredLessons.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {filteredLessons.map((lesson) => (
-              <div key={lesson.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                {/* Lesson Image */}
-                <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center">
-                  {lesson.image_filename ? (
-                    <img 
-                      src={`/images/lessons/${lesson.image_filename}`}
-                      alt={lesson.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-6xl">
-                      {getContentTypeIcon(lesson.content_type)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Lesson Content */}
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getContentTypeColor(lesson.content_type)}`}>
-                      {lesson.content_type.toUpperCase()}
-                    </span>
-                    <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                      {lesson.level === 'beginner' ? 'Beginner-Lower' : 'Intermediate-Upper'}
-                    </span>
-                    {lesson.language_support && lesson.language_support !== 'english' && (
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                        +{lesson.language_support}
-                      </span>
-                    )}
+        {/* Sample Lessons */}
+        {samples.length > 0 ? (
+          <div className="grid gap-8 mb-12">
+            {samples.map((lesson) => (
+              <div 
+                key={lesson.id}
+                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-200 overflow-hidden"
+              >
+                <div className="md:flex">
+                  {/* Lesson Image */}
+                  <div className="md:w-1/3">
+                    <div className={`h-64 md:h-full bg-${getPlanColor()}-100 flex items-center justify-center`}>
+                      <div className="text-center">
+                        <div className="text-8xl mb-4">
+                          {lesson.content_type === 'esl' ? '📰' : '🔬'}
+                        </div>
+                        <div className="text-lg font-semibold text-gray-700 uppercase tracking-wide">
+                          {lesson.content_type} Sample
+                        </div>
+                      </div>
+                    </div>
                   </div>
-
-                  <h3 className="text-lg font-bold text-gray-900 mb-3 line-clamp-2">
-                    {lesson.title}
-                  </h3>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                      Sample Lesson
-                    </span>
-                    <Link
-                      href={`/lessons/${lesson.id}`}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      Try Now →
-                    </Link>
+                  
+                  {/* Lesson Details */}
+                  <div className="md:w-2/3 p-8">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          {lesson.title}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+                          <span className="flex items-center">
+                            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                            Free Sample
+                          </span>
+                          <span className="capitalize">{lesson.level} Level</span>
+                          <span className="uppercase">{lesson.content_type}</span>
+                          {lesson.language_support !== 'english' && (
+                            <span className="flex items-center">
+                              <span className="text-lg mr-1">{getLanguageFlag(lesson.language_support)}</span>
+                              <span className="capitalize">{lesson.language_support} Support</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6 leading-relaxed">
+                      {lesson.content_type === 'esl' 
+                        ? "Experience our interactive news-based English learning with real-world topics, vocabulary exercises, and comprehension activities."
+                        : "Discover our CLIL approach combining science education with English learning, featuring bilingual vocabulary support and interactive experiments."
+                      }
+                    </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-500">
+                        <span className="font-medium">✨ Complete interactive experience</span>
+                        <span className="block">📝 All exercises included</span>
+                      </div>
+                      
+                      <Link
+                        href={`/lessons/${lesson.id}?sample=true`}
+                        className={`bg-${getPlanColor()}-600 text-white px-8 py-3 rounded-lg hover:bg-${getPlanColor()}-700 font-medium transition-colors shadow-lg hover:shadow-xl`}
+                      >
+                        Start Sample Lesson →
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -214,13 +254,15 @@ export default function SamplesPage() {
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📚</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No Sample Lessons Yet</h3>
-            <p className="text-gray-600 mb-6">
-              We're preparing amazing sample lessons for you. Check back soon!
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              No samples available yet
+            </h3>
+            <p className="text-gray-600 mb-8">
+              We're preparing amazing sample lessons for your selected preferences.
             </p>
             <Link
               href="/"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition-colors"
             >
               ← Back to Home
             </Link>
@@ -228,44 +270,46 @@ export default function SamplesPage() {
         )}
 
         {/* Call to Action */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          <h3 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready for Full Access?
-          </h3>
-          <p className="text-lg text-gray-600 mb-6 max-w-2xl mx-auto">
-            Unlock hundreds of lessons, track your progress, and learn at your own pace with our complete platform.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-8">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-1">16+</div>
-              <div className="text-gray-600">New lessons every month</div>
+        {samples.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Ready for unlimited access?
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+              {content === 'complete-plan' 
+                ? "Get unlimited access to all ESL news content AND CLIL science lessons with full language support."
+                : content === 'clil-plus'
+                ? "Get unlimited access to all CLIL science lessons with full language support in your chosen language."
+                : "Get unlimited access to all ESL news-based English lessons with fresh content every week."
+              }
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link
+                href={`/register?plan=${content}&level=${level}&language=${language}`}
+                className={`bg-${getPlanColor()}-600 text-white px-8 py-4 rounded-lg hover:bg-${getPlanColor()}-700 font-medium text-lg transition-colors shadow-lg hover:shadow-xl`}
+              >
+                {getPlanIcon()} Get Full Access
+              </Link>
+              
+              <Link
+                href="/"
+                className="text-gray-600 hover:text-gray-900 font-medium px-4 py-2"
+              >
+                ← Choose Different Plan
+              </Link>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-1">5</div>
-              <div className="text-gray-600">Language support options</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600 mb-1">∞</div>
-              <div className="text-gray-600">Progress tracking & analytics</div>
-            </div>
-          </div>
 
-          <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
-            <Link
-              href="/register"
-              className="block sm:inline-block bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
-            >
-              Start Your Subscription
-            </Link>
-            <Link
-              href="/subscribe"
-              className="block sm:inline-block border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg hover:bg-blue-50 transition-colors font-medium text-lg"
-            >
-              View Pricing Plans
-            </Link>
+            <div className="mt-6 text-sm text-gray-500">
+              <span className="inline-flex items-center">
+                <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                New lessons every week • Cancel anytime • Mobile friendly
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

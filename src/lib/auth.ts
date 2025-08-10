@@ -36,15 +36,23 @@ export async function signUp(email: string, password: string) {
     if (error) throw error
 
     // Create user profile in our users table
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: data.user.id,
-          email: data.user.email!,
-          email_verified: false,
-          onboarding_completed: false
-        })
+if (data.user) {
+  const { error: profileError } = await supabase
+    .from('users')
+    .upsert({
+      id: data.user.id,
+      email: data.user.email!,
+      email_verified: false,
+      onboarding_completed: false,
+      preferred_level: 'beginner',
+      preferred_content_type: 'esl',
+      preferred_language: 'en',
+      subscription_tier: 'free',
+      subscription_status: 'inactive'
+    }, { 
+      onConflict: 'id',
+      ignoreDuplicates: false 
+    })
 
       if (profileError) {
         console.error('Profile creation error:', profileError)

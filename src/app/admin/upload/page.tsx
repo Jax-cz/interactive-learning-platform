@@ -302,16 +302,30 @@ case 'SEQUENCE_PROCESS':
       setIsUploading(true);
 
       const lessonData = {
-        title: parsedLesson.title,
-        level: parsedLesson.level.toLowerCase(),
-        content_type: parsedLesson.contentType.toLowerCase(),
-        language_support: parsedLesson.languageSupport,
-        filename: parsedLesson.filename,
-        content_data: parsedLesson.sections,
-        published: true,
-        week_number: parsedLesson.weekNumber,
-        image_filename: parsedLesson.imageFilename
-      };
+  title: parsedLesson.title,
+  level: parsedLesson.level.toLowerCase(),
+  content_type: parsedLesson.contentType.toLowerCase(),
+  language_support: parsedLesson.languageSupport,
+  filename: parsedLesson.filename,
+  content_data: parsedLesson.sections,
+  published: true,                    // ✅ Uploaded to database
+  is_published: false,                // ✅ NEW: Not yet available to students
+  week_number: parsedLesson.weekNumber,
+  release_date: calculateReleaseDate(parsedLesson.weekNumber), // ✅ NEW: Calculate release date
+  image_filename: parsedLesson.imageFilename
+};
+
+// ✅ NEW: Add this helper function above the lessonData object
+function calculateReleaseDate(weekNumber: number) {
+  // Start date for week 1 (adjust this to your preferred start date)
+  const startDate = new Date('2025-08-01'); // Friday, August 01, 2025
+  
+  // Calculate release date: start date + (week number - 1) * 7 days
+  const releaseDate = new Date(startDate);
+  releaseDate.setDate(startDate.getDate() + (weekNumber - 1) * 7);
+  
+  return releaseDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+}
 
       const response = await fetch('/api/lessons/save', {
         method: 'POST',

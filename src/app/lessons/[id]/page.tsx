@@ -360,19 +360,28 @@ function MultiReadingComponent({ readingText, onComplete, isMultiLanguage, showT
       )}
 
       <div className="prose max-w-none">
-        {parsedText.map((sentence, index) => (
-          <div key={index} className="mb-4">
-            <p className="text-gray-800 leading-relaxed mb-1">
-              {sentence.english}
-            </p>
-            {isMultiLanguage && showTranslation && sentence.translation && (
-              <p className="text-gray-600 text-sm italic leading-relaxed">
-                {sentence.translation}
-              </p>
-            )}
-          </div>
-        ))}
+  {parsedText.map((sentence, index) => {
+    // Check if this sentence is the source attribution
+    const isSourceAttribution = sentence.english.trim().startsWith("This text is adapted from");
+    
+    return (
+      <div key={index} className="mb-4">
+        <p className={`leading-relaxed mb-1 ${
+          isSourceAttribution 
+            ? 'text-sm text-gray-600 italic border-t pt-3 mt-4' 
+            : 'text-gray-800'
+        }`}>
+          {sentence.english}
+        </p>
+        {isMultiLanguage && showTranslation && sentence.translation && !isSourceAttribution && (
+          <p className="text-gray-600 text-sm italic leading-relaxed">
+            {sentence.translation}
+          </p>
+        )}
       </div>
+    );
+  })}
+</div>
 
       <button
         onClick={onComplete}
@@ -1807,14 +1816,38 @@ if (!lesson) {
                       )}
                     </div>
                     <button
-                      onClick={async () => {
-                        markExerciseComplete(currentExercise);
-                        await saveLessonProgress();
-                      }}
-                      className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Complete Lesson ✓
-                    </button>
+  onClick={async () => {
+    markExerciseComplete(currentExercise);
+    await saveLessonProgress();
+    
+    // Check if this is a sample lesson
+    const urlParams = new URLSearchParams(window.location.search);
+    const isSample = urlParams.get('sample') === 'true';
+    
+    if (isSample) {
+      // Sample lesson: Redirect to registration with user preferences
+      const currentUrl = new URL(window.location.href);
+      const samplesUrl = document.referrer; // Where they came from (samples page)
+      
+      // Extract parameters from samples page referrer or current URL
+      const level = urlParams.get('level') || new URLSearchParams(samplesUrl.split('?')[1] || '').get('level') || 'beginner';
+      const content = urlParams.get('content') || new URLSearchParams(samplesUrl.split('?')[1] || '').get('content') || 'esl';
+      const language = urlParams.get('language') || new URLSearchParams(samplesUrl.split('?')[1] || '').get('language') || 'English';
+      
+      window.location.href = `/register?plan=${content}&level=${level}&language=${language}`;
+    } else {
+      // Regular lesson: Redirect to dashboard
+      window.location.href = '/dashboard';
+    }
+  }}
+  className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+>
+  {/* Dynamic button text based on sample vs regular */}
+  {new URLSearchParams(window.location.search).get('sample') === 'true' 
+    ? 'Get Full Access →' 
+    : 'Complete Lesson ✓'
+  }
+</button>
                   </div>
                 )}
 

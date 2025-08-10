@@ -15,17 +15,21 @@ export default function HomePage() {
 
   const handleContentSelect = (contentType: string) => {
     setSelectedContentType(contentType);
-    if (contentType === 'clil-plus') {
+    
+    if (contentType === 'esl') {
+      // ESL: Redirect directly to samples (no language selection needed)
+      window.location.href = `/samples?level=${selectedLevel}&content=esl`;
+    } else if (contentType === 'clil-plus' || contentType === 'complete-plan') {
+      // CLIL Plus and Complete Plan: Show language selection first
       setShowLanguageSelection(true);
-    } else {
-      // For ESL and CLIL English only, go directly to dashboard/signup
-      handleComplete();
     }
   };
 
   const handleLanguageSelect = (language: string) => {
     setSelectedLanguage(language);
-    handleComplete();
+    
+    // Direct redirect to samples with all parameters
+    window.location.href = `/samples?level=${selectedLevel}&content=${selectedContentType}&language=${language}`;
   };
 
   const handleComplete = () => {
@@ -63,6 +67,7 @@ export default function HomePage() {
                 Easy Language Learning Interactive Learning Platform
               </h1>
             </div>
+
             <div className="space-x-4">
               <Link
                 href="/login"
@@ -101,7 +106,7 @@ export default function HomePage() {
               <span className="ml-2 font-medium hidden sm:inline">Content</span>
             </div>
             
-            <div className={`w-8 h-1 ${selectedContentType === 'clil-plus' && showLanguageSelection ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`w-8 h-1 ${(selectedContentType === 'clil-plus' || selectedContentType === 'complete-plan') && showLanguageSelection ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             
             {/* Step 3 */}
             <div className={`flex items-center ${selectedLanguage ? 'text-blue-600' : 'text-gray-400'}`}>
@@ -160,20 +165,10 @@ export default function HomePage() {
                 </ul>
               </button>
             </div>
-
-            {/* Get Started Button - Desktop: Below cards, Mobile: At bottom */}
-            <div className="mt-12 flex justify-center">
-              <Link
-                href="/samples"
-                className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 font-medium text-lg transition-colors shadow-lg hover:shadow-xl"
-              >
-                Try Free Samples
-              </Link>
-            </div>
           </div>
         )}
-
-        {/* Step 2: Content Type Selection */}
+                        
+        {/* Step 2: Content Type Selection - NOW WITH 3 OPTIONS */}
         {selectedLevel && !selectedContentType && (
           <div className="animate-fade-in">
             <div className="flex items-center justify-between mb-6">
@@ -188,7 +183,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* ESL Option */}
               <button
                 onClick={() => handleContentSelect('esl')}
@@ -207,34 +202,16 @@ export default function HomePage() {
                 </div>
               </button>
 
-              {/* CLIL English Only */}
-              <button
-                onClick={() => handleContentSelect('clil')}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-300 text-left"
-              >
-                <div className="w-full h-48 bg-purple-100 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-8xl">🔬</span>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">CLIL English</h3>
-                <p className="text-gray-600 text-sm mb-3">
-                  Learn English through Science subjects
-                </p>
-                <div className="text-xs text-gray-500">
-                  <p>Perfect for: Teenagers and Adults</p>
-                  <p>Focus: Science + English</p>
-                </div>
-              </button>
-
               {/* CLIL with Language Support */}
               <button
                 onClick={() => handleContentSelect('clil-plus')}
-                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-300 text-left relative"
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-300 text-left relative"
               >
-                <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                <div className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
                   Popular
                 </div>
-                <div className="w-full h-48 bg-blue-100 rounded-lg mb-4 flex items-center justify-center">
-                  <span className="text-8xl">🌍</span>
+                <div className="w-full h-48 bg-purple-100 rounded-lg mb-4 flex items-center justify-center">
+                  <span className="text-8xl">🔬</span>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">CLIL + Language Support</h3>
                 <p className="text-gray-600 text-sm mb-3">
@@ -245,11 +222,32 @@ export default function HomePage() {
                   <p>Focus: Science + English + Native language</p>
                 </div>
               </button>
+
+              {/* Complete Plan Option */}
+              <button
+                onClick={() => handleContentSelect('complete-plan')}
+                className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-300 text-left relative"
+              >
+                <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                  Best Value
+                </div>
+                <div className="w-full h-48 bg-blue-100 rounded-lg mb-4 flex items-center justify-center">
+                  <span className="text-8xl">🌍</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Plan</h3>
+                <p className="text-gray-600 text-sm mb-3">
+                  Everything! ESL + CLIL with language support of your choice
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>Perfect for: All learners</p>
+                  <p>Focus: News + Science + Native language</p>
+                </div>
+              </button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Language Selection */}
+        {/* Step 3: Language Selection - NOW SHOWS FOR BOTH clil-plus AND complete-plan */}
         {showLanguageSelection && (
           <div className="animate-fade-in">
             <div className="flex items-center justify-between mb-6">
@@ -266,46 +264,55 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <button
-                onClick={() => handleLanguageSelect('cs')}
+                onClick={() => handleLanguageSelect('English')}
                 className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-center"
               >
-                <div className="text-3xl mb-2">🇨🇿</div>
+                <div className="text-3xl mb-2 font-bold text-gray-800">EN</div>
+                <div className="font-semibold text-gray-800">English Only</div>
+                <div className="text-sm text-gray-600">No translation support</div>
+              </button>
+
+              <button
+                onClick={() => handleLanguageSelect('Czech')}
+                className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-center"
+              >
+                <div className="text-3xl mb-2 font-bold text-gray-800">CZ</div>
                 <div className="font-semibold text-gray-800">Czech</div>
                 <div className="text-sm text-gray-600">Čeština</div>
               </button>
               
               <button
-                onClick={() => handleLanguageSelect('de')}
+                onClick={() => handleLanguageSelect('German')}
                 className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-center"
               >
-                <div className="text-3xl mb-2">🇩🇪</div>
+                <div className="text-3xl mb-2 font-bold text-gray-800">DE</div>
                 <div className="font-semibold text-gray-800">German</div>
                 <div className="text-sm text-gray-600">Deutsch</div>
               </button>
               
               <button
-                onClick={() => handleLanguageSelect('fr')}
+                onClick={() => handleLanguageSelect('French')}
                 className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-center"
               >
-                <div className="text-3xl mb-2">🇫🇷</div>
+                <div className="text-3xl mb-2 font-bold text-gray-800">FR</div>
                 <div className="font-semibold text-gray-800">French</div>
                 <div className="text-sm text-gray-600">Français</div>
               </button>
               
               <button
-                onClick={() => handleLanguageSelect('es')}
+                onClick={() => handleLanguageSelect('Spanish')}
                 className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-center"
               >
-                <div className="text-3xl mb-2">🇪🇸</div>
+                <div className="text-3xl mb-2 font-bold text-gray-800">ES</div>
                 <div className="font-semibold text-gray-800">Spanish</div>
                 <div className="text-sm text-gray-600">Español</div>
               </button>
               
               <button
-                onClick={() => handleLanguageSelect('pl')}
+                onClick={() => handleLanguageSelect('Polish')}
                 className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all text-center"
               >
-                <div className="text-3xl mb-2">🇵🇱</div>
+                <div className="text-3xl mb-2 font-bold text-gray-800">PL</div>
                 <div className="font-semibold text-gray-800">Polish</div>
                 <div className="text-sm text-gray-600">Polski</div>
               </button>

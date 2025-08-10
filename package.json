@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
+  "dev": "next dev",
+  "build": "next build", 
+  "start": "next start",
+  "lint": "next lint",
+  "auto-release": "node scripts/auto-release.js",
+  "release-check": "node scripts/auto-release.js"
+},
   "dependencies": {
     "@stripe/stripe-js": "^7.7.0",
     "@supabase/supabase-js": "^2.53.0",
