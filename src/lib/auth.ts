@@ -23,6 +23,8 @@ export type UserProfile = {
 }
 
 // Sign up new user
+// Updated signUp function - replace the existing one in src/lib/auth.ts
+
 export async function signUp(email: string, password: string) {
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -36,32 +38,48 @@ export async function signUp(email: string, password: string) {
     if (error) throw error
 
     // Create user profile in our users table
-if (data.user) {
-  const { error: profileError } = await supabase
-    .from('users')
-    .upsert({
-      id: data.user.id,
-      email: data.user.email!,
-      email_verified: false,
-      onboarding_completed: false,
-      preferred_level: 'beginner',
-      preferred_content_type: 'esl',
-      preferred_language: 'en',
-      subscription_tier: 'free',
-      subscription_status: 'inactive'
-    }, { 
-      onConflict: 'id',
-      ignoreDuplicates: false 
-    })
+    if (data.user) {
+      console.log('Creating profile for user:', data.user.id); // Debug log
+      
+      const { error: profileError } = await supabase
+        .from('users')
+        .upsert({
+          id: data.user.id,
+          email: data.user.email!,
+          email_verified: false,
+          onboarding_completed: false,
+          preferred_content_type: 'esl',
+          preferred_level: 'beginner', 
+          preferred_language: 'en',
+          subscription_tier: 'free',
+          subscription_status: 'inactive',
+          notifications_enabled: true,
+          last_level_change: null,
+          level_change_count: 0,
+          free_trial_days: 0,
+          timezone: 'UTC'
+        }, { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
 
       if (profileError) {
         console.error('Profile creation error:', profileError)
-        // Continue anyway - profile can be created later
+        // Don't fail registration, but log the detailed error
+        console.error('Profile error details:', {
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+          code: profileError.code
+        })
+      } else {
+        console.log('Profile created successfully!'); // Debug log
       }
     }
 
     return { user: data.user, error: null }
   } catch (error: any) {
+    console.error('SignUp error:', error); // Debug log
     return { user: null, error: error.message }
   }
 }
