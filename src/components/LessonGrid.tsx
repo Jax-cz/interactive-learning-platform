@@ -150,18 +150,7 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
         .eq(admin ? 'published' : 'is_published', true)
         .order('week_number', { ascending: true });
 
-      // Apply manual filters
-      if (filter.contentType !== 'all') {
-        query = query.eq('content_type', filter.contentType);
-      }
-      if (filter.level !== 'all') {
-        query = query.eq('level', filter.level);
-      }
-      if (filter.language !== 'all') {
-        const capitalizedLanguage = filter.language.charAt(0).toUpperCase() + filter.language.slice(1);
-        query = query.eq('language_support', capitalizedLanguage);
-      }
-
+      // Execute the initial query (get all published lessons)
       const { data, error } = await query;
 
       if (error) {
@@ -173,27 +162,99 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
       let filteredLessons = data || [];
 
       if (!admin && contentAccess && progressionData) {
-        // Apply subscription filtering
-        if (contentAccess.canAccessESL && contentAccess.canAccessCLIL) {
-          // Complete plan - show all
-        } else if (contentAccess.canAccessESL) {
-          filteredLessons = filteredLessons.filter(l => l.content_type === 'esl');
-        } else if (contentAccess.canAccessCLIL) {
-          filteredLessons = filteredLessons.filter(l => l.content_type === 'clil');
+        // STEP 1: Apply subscription-based filtering (same logic as dashboard)
+        if (!contentAccess.canAccessESL && !contentAccess.canAccessCLIL) {
+          // Free plan - show ALL samples (999 week_number) regardless of content type/level
+          filteredLessons = filteredLessons.filter(lesson => lesson.week_number === 999);
         } else {
-          // Free user - only samples
-          filteredLessons = filteredLessons.filter(l => l.is_sample);
+          // Paid users - filter by subscription + separate samples from regular lessons
+          const sampleLessons = filteredLessons.filter(lesson => lesson.week_number === 999);
+          const regularLessons = filteredLessons.filter(lesson => lesson.week_number !== 999);
+
+          // Filter regular lessons by subscription
+          let allowedRegularLessons = regularLessons;
+          if (contentAccess.canAccessESL && contentAccess.canAccessCLIL) {
+            // Complete plan - show ESL + CLIL with language filtering
+            const userLanguageSupport = profile?.language_support || 'en';
+            allowedRegularLessons = regularLessons.filter(lesson => {
+              if (lesson.content_type === 'esl') {
+                return true; // Always show ESL
+              } else if (lesson.content_type === 'clil') {
+                return lesson.language_support === userLanguageSupport; // Filter CLIL by language
+              }
+              return false;
+            });
+          } else if (contentAccess.canAccessESL) {
+            // ESL only
+            allowedRegularLessons = regularLessons.filter(l => l.content_type === 'esl');
+          } else if (contentAccess.canAccessCLIL) {
+            // CLIL Plus - filter by user's language support
+            const userLanguageSupport = profile?.language_support || 'en';
+            allowedRegularLessons = regularLessons.filter(l => 
+              l.content_type === 'clil' && l.language_support === userLanguageSupport
+            );
+          }
+
+          // Apply progression limits only to regular lessons
+          const limitedRegularLessons = allowedRegularLessons
+            .sort((a, b) => a.week_number - b.week_number)
+            .slice(0, progressionData.available_lessons);
+
+          // Combine samples + limited regular lessons
+          filteredLessons = [...sampleLessons, ...limitedRegularLessons];
         }
 
-        // Apply level preference
-        if (profile?.preferred_level) {
-          filteredLessons = filteredLessons.filter(l => l.level === profile.preferred_level);
+        // STEP 2: Apply level filtering (only for paid users, free users see all samples)
+        if ((contentAccess.canAccessESL || contentAccess.canAccessCLIL) && 
+            profile?.preferred_level && 
+            profile.preferred_level !== 'both') {
+          // Apply level filter only to regular lessons, keep all samples
+          const samples = filteredLessons.filter(l => l.week_number === 999);
+          const regular = filteredLessons.filter(l => l.week_number !== 999 && l.level === profile.preferred_level);
+          filteredLessons = [...samples, ...regular];
         }
-
-        // Apply progression filtering: available lessons + next 8 locked
-        const maxLessonsToShow = progressionData.available_lessons + 8;
-        filteredLessons = filteredLessons.slice(0, maxLessonsToShow);
       }
+
+      // STEP 3: Apply manual filters (but respect subscription limits)
+      if (filter.contentType !== 'all') {
+        filteredLessons = filteredLessons.filter(l => l.content_type === filter.contentType);
+      }
+      if (filter.level !== 'all') {
+        filteredLessons = filteredLessons.filter(l => l.level === filter.level);
+      }
+      if (filter.language !== 'all') {
+        const languageMap: { [key: string]: string } = {
+          'english': 'en',
+          'czech': 'cs', 
+          'german': 'de',
+          'french': 'fr',
+          'spanish': 'es',
+          'polish': 'pl'
+        };
+        const targetLanguage = languageMap[filter.language] || filter.language;
+        filteredLessons = filteredLessons.filter(l => l.language_support === targetLanguage);
+      }
+
+      // Sort: samples first (999), then regular lessons by week
+      filteredLessons.sort((a, b) => {
+        if (a.week_number === 999 && b.week_number !== 999) return -1;
+        if (a.week_number !== 999 && b.week_number === 999) return 1;
+        return a.week_number - b.week_number;
+      });
+
+      console.log('🔍 LessonGrid filtering debug:', {
+        userProfile: {
+          subscription_tier: profile?.subscription_tier,
+          language_support: profile?.language_support,
+          preferred_level: profile?.preferred_level
+        },
+        access: contentAccess,
+        totalLessons: (data || []).length,
+        filteredCount: filteredLessons.length,
+        samples: filteredLessons.filter(l => l.week_number === 999).length,
+        regular: filteredLessons.filter(l => l.week_number !== 999).length,
+        progressionLimit: progressionData?.available_lessons
+      });
 
       setLessons(filteredLessons);
     } catch (error) {
@@ -211,7 +272,20 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
 
     const lessonProgress = userProgress.find(p => p.lesson_id === lesson.id);
     const isCompleted = lessonProgress?.is_completed || false;
-    const isAvailable = index < progressionData.available_lessons;
+    
+    // Samples (999) are always available
+    if (lesson.week_number === 999) {
+      return { 
+        status: isCompleted ? 'completed' : 'available', 
+        locked: false 
+      };
+    }
+
+    // Regular lessons follow progression rules
+    const regularLessonsBeforeThis = lessons.filter((l, i) => 
+      i < index && l.week_number !== 999
+    ).length;
+    const isAvailable = regularLessonsBeforeThis < progressionData.available_lessons;
     
     if (isCompleted) {
       return { status: 'completed', locked: false };
@@ -231,21 +305,56 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
     } else if (contentAccess.canAccessESL) {
       return { label: 'ESL Only', color: 'bg-orange-100 text-orange-800' };
     } else if (contentAccess.canAccessCLIL) {
-      return { label: 'CLIL English', color: 'bg-purple-100 text-purple-800' };
+      return { label: 'CLIL + Language Support', color: 'bg-purple-100 text-purple-800' };
     } else {
       return { label: 'Free Plan', color: 'bg-gray-100 text-gray-800' };
     }
   };
 
+  const getAvailableFilterOptions = () => {
+    if (admin) {
+      return {
+        contentTypes: ['all', 'esl', 'clil'],
+        levels: ['all', 'beginner', 'intermediate'],
+        languages: ['all', 'english', 'czech', 'german', 'french', 'spanish', 'polish']
+      };
+    }
+
+    if (!contentAccess) {
+      return { contentTypes: ['all'], levels: ['all'], languages: ['all'] };
+    }
+
+    const options = {
+      contentTypes: ['all'],
+      levels: ['all', 'beginner', 'intermediate'],
+      languages: ['all']
+    };
+
+    // Content type options based on subscription
+    if (contentAccess.canAccessESL && contentAccess.canAccessCLIL) {
+      options.contentTypes = ['all', 'esl', 'clil'];
+      options.languages = ['all', 'english', 'czech', 'german', 'french', 'spanish', 'polish'];
+    } else if (contentAccess.canAccessESL) {
+      options.contentTypes = ['all', 'esl'];
+      options.languages = ['all', 'english'];
+    } else if (contentAccess.canAccessCLIL) {
+      options.contentTypes = ['all', 'clil'];
+      options.languages = ['all', 'czech', 'german', 'french', 'spanish', 'polish'];
+    } else {
+      // Free users see all sample content
+      options.contentTypes = ['all', 'esl', 'clil'];
+      options.languages = ['all', 'english', 'czech', 'german', 'french', 'spanish', 'polish'];
+    }
+
+    return options;
+  };
+
   const handleLessonClick = (lesson: Lesson, status: any) => {
     if (admin) {
-      // Admin can preview any lesson
       router.push(`/lessons/${lesson.id}`);
     } else if (!status.locked) {
-      // Student can only access available/completed lessons
       router.push(`/lessons/${lesson.id}`);
     }
-    // Locked lessons do nothing on click
   };
 
   if (loading) {
@@ -260,12 +369,28 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
   }
 
   const subscriptionInfo = getSubscriptionInfo();
+  const filterOptions = getAvailableFilterOptions();
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+     {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
+          {/* Back to Dashboard Button for Students */}
+          {!admin && (
+            <div className="mb-4">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Dashboard</span>
+              </button>
+            </div>
+          )}
+          
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
@@ -302,9 +427,13 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
                 onChange={(e) => setFilter({...filter, contentType: e.target.value})}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">All Types</option>
-                <option value="esl">ESL (News)</option>
-                <option value="clil">CLIL (Science)</option>
+                {filterOptions.contentTypes.map(type => (
+                  <option key={type} value={type}>
+                    {type === 'all' ? 'All Types' : 
+                     type === 'esl' ? 'ESL (News)' : 
+                     'CLIL (Science)'}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -315,9 +444,12 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
                 onChange={(e) => setFilter({...filter, level: e.target.value})}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">All Levels</option>
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
+                {filterOptions.levels.map(level => (
+                  <option key={level} value={level}>
+                    {level === 'all' ? 'All Levels' : 
+                     level.charAt(0).toUpperCase() + level.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -328,13 +460,13 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
                 onChange={(e) => setFilter({...filter, language: e.target.value})}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="all">All Languages</option>
-                <option value="english">English Only</option>
-                <option value="czech">Czech Support</option>
-                <option value="german">German Support</option>
-                <option value="french">French Support</option>
-                <option value="spanish">Spanish Support</option>
-                <option value="polish">Polish Support</option>
+                {filterOptions.languages.map(lang => (
+                  <option key={lang} value={lang}>
+                    {lang === 'all' ? 'All Languages' :
+                     lang === 'english' ? 'English Only' :
+                     lang.charAt(0).toUpperCase() + lang.slice(1) + ' Support'}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -377,7 +509,7 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
                     
                     {/* Week Badge */}
                     <div className="absolute top-4 left-4 bg-white rounded-full px-3 py-1 text-sm font-semibold text-gray-900 shadow-lg">
-                      Week {lesson.week_number}
+                      {lesson.week_number === 999 ? 'Sample' : `Week ${lesson.week_number}`}
                     </div>
 
                     {/* Content Type Badge */}
@@ -421,7 +553,15 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
                     
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                       <span className="capitalize">{lesson.level}</span>
-                      <span className="capitalize">{lesson.language_support}</span>
+                      <span className="capitalize">
+                        {lesson.language_support === 'en' ? 'English' : 
+                         lesson.language_support === 'cs' ? 'Czech' :
+                         lesson.language_support === 'de' ? 'German' :
+                         lesson.language_support === 'fr' ? 'French' :
+                         lesson.language_support === 'es' ? 'Spanish' :
+                         lesson.language_support === 'pl' ? 'Polish' :
+                         lesson.language_support}
+                      </span>
                     </div>
 
                     <button 

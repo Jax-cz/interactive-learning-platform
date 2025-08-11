@@ -615,91 +615,112 @@ export default function Dashboard() {
     }
   };
 
-   const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData) => {
-  try {
-    let query = supabase
-      .from('lessons')
-      .select('*')
-      .eq('is_published', true)
-      .order('week_number', { ascending: true });
+  const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData) => {
+    try {
+      let query = supabase
+        .from('lessons')
+        .select('*')
+        .eq('is_published', true)
+        .order('week_number', { ascending: true });
 
-    // Content type filtering
-    if (access.canAccessESL && access.canAccessCLIL) {
-      // Complete plan - show both ESL and CLIL, but filter CLIL by language support
-      // No content_type filter here - we'll handle language filtering below
-    } else if (access.canAccessESL) {
-      // ESL only
-      query = query.eq('content_type', 'esl');
-    } else if (access.canAccessCLIL) {
-      // CLIL only
-      query = query.eq('content_type', 'clil');
-    } else {
-      // Free plan - samples only
-      query = query.eq('is_sample', true);
-    }
+      // Handle sample lessons (999 week_number) and regular lessons
+      if (access.canAccessESL && access.canAccessCLIL) {
+        // Complete plan - show both ESL and CLIL, but filter CLIL by language support
+        // Include both samples (999) and regular lessons
+      } else if (access.canAccessESL) {
+        // ESL only - include samples and ESL lessons
+        query = query.eq('content_type', 'esl');
+      } else if (access.canAccessCLIL) {
+        // CLIL only - include samples and CLIL lessons
+        query = query.eq('content_type', 'clil');
+      } else {
+        // Free plan - samples only (week_number = 999)
+        query = query.eq('week_number', 999);
+      }
 
-    // Level filtering
-    if (profile?.preferred_level) {
-      query = query.eq('level', profile.preferred_level);
-    }
+      // Level filtering
+      if (profile?.preferred_level && profile.preferred_level !== 'both') {
+        query = query.eq('level', profile.preferred_level);
+      }
 
-    // Execute the initial query
-    const { data: allLessons, error } = await query;
-    if (error) throw error;
+      // Execute the initial query
+      const { data: allLessons, error } = await query;
+      if (error) throw error;
 
-    // Post-query filtering for language support (Complete Plan and CLIL Plus)
-    let filteredLessons = allLessons || [];
-    
-    if (access.canAccessESL && access.canAccessCLIL) {
-      // Complete Plan: Show ESL lessons + CLIL lessons matching user's language support
-      const userLanguageSupport = profile?.language_support || 'en';
-      
-      filteredLessons = (allLessons || []).filter(lesson => {
-        if (lesson.content_type === 'esl') {
-          return true; // Always show ESL lessons for Complete Plan
-        } else if (lesson.content_type === 'clil') {
-          return lesson.language_support === userLanguageSupport; // Filter CLIL by language support
-        }
-        return false;
-      });
-    } else if (access.canAccessCLIL) {
-      // CLIL Plus: Show only CLIL lessons matching user's language support
-      const userLanguageSupport = profile?.language_support || 'en';
-      
-      filteredLessons = (allLessons || []).filter(lesson => {
-        return lesson.content_type === 'clil' && lesson.language_support === userLanguageSupport;
-      });
-    }
-    // For ESL only and free plans, use the original filtered results
-
-    // Apply progression limits
-    const sortedLessons = filteredLessons
-      .sort((a, b) => a.week_number - b.week_number)
-      .slice(0, progression.available_lessons + 5);
-
-    console.log('🔍 Lesson filtering debug:', {
-      userProfile: {
+      console.log('🔍 Raw lessons from database:', {
+        total: allLessons?.length,
+        samples: allLessons?.filter(l => l.week_number === 999).length,
+        regular: allLessons?.filter(l => l.week_number !== 999).length,
         subscription_tier: profile?.subscription_tier,
-        language_support: profile?.language_support,
-        preferred_level: profile?.preferred_level
-      },
-      access: access,
-      totalLessonsFound: (allLessons || []).length,
-      filteredLessonsCount: filteredLessons.length,
-      finalLessonsCount: sortedLessons.length,
-      sampleLessons: sortedLessons.slice(0, 3).map(l => ({
-        title: l.title,
-        content_type: l.content_type,
-        language_support: l.language_support,
-        level: l.level
-      }))
-    });
+        access: access
+      });
 
-    setLessons(sortedLessons);
-  } catch (err: any) {
-    console.error('Lessons loading error:', err);
-  }
-};
+      // Post-query filtering for language support (Complete Plan and CLIL Plus)
+      let filteredLessons = allLessons || [];
+      
+      if (access.canAccessESL && access.canAccessCLIL) {
+        // Complete Plan: Show ESL lessons + CLIL lessons matching user's language support
+        const userLanguageSupport = profile?.language_support || 'en';
+        
+        filteredLessons = (allLessons || []).filter(lesson => {
+          if (lesson.content_type === 'esl') {
+            return true; // Always show ESL lessons for Complete Plan
+          } else if (lesson.content_type === 'clil') {
+            return lesson.language_support === userLanguageSupport; // Filter CLIL by language support
+          }
+          return false;
+        });
+      } else if (access.canAccessCLIL) {
+        // CLIL Plus: Show only CLIL lessons matching user's language support
+        const userLanguageSupport = profile?.language_support || 'en';
+        
+        filteredLessons = (allLessons || []).filter(lesson => {
+          return lesson.content_type === 'clil' && lesson.language_support === userLanguageSupport;
+        });
+      }
+      // For ESL only and free plans, use the original filtered results
+
+      // Apply progression limits ONLY to non-sample lessons
+      const sampleLessons = filteredLessons.filter(lesson => lesson.week_number === 999);
+      const regularLessons = filteredLessons.filter(lesson => lesson.week_number !== 999);
+      
+      // Sort regular lessons and apply progression limit
+      const limitedRegularLessons = regularLessons
+        .sort((a, b) => a.week_number - b.week_number)
+        .slice(0, progression.available_lessons);
+
+      // Combine samples + limited regular lessons
+      const finalLessons = [...sampleLessons, ...limitedRegularLessons]
+        .sort((a, b) => a.week_number - b.week_number);
+
+      console.log('🔍 Final lesson filtering debug:', {
+        userProfile: {
+          subscription_tier: profile?.subscription_tier,
+          language_support: profile?.language_support,
+          preferred_level: profile?.preferred_level
+        },
+        access: access,
+        rawLessonsCount: (allLessons || []).length,
+        filteredLessonsCount: filteredLessons.length,
+        sampleLessonsCount: sampleLessons.length,
+        regularLessonsCount: regularLessons.length,
+        limitedRegularLessonsCount: limitedRegularLessons.length,
+        finalLessonsCount: finalLessons.length,
+        progressionLimit: progression.available_lessons,
+        samplePreview: sampleLessons.slice(0, 3).map(l => ({
+          title: l.title,
+          content_type: l.content_type,
+          language_support: l.language_support,
+          level: l.level,
+          week_number: l.week_number
+        }))
+      });
+
+      setLessons(finalLessons);
+    } catch (err: any) {
+      console.error('Lessons loading error:', err);
+    }
+  };
 
   const loadProgress = async (userId: string) => {
     try {
@@ -827,21 +848,21 @@ export default function Dashboard() {
   };
 
   const getSubscriptionBadge = () => {
-  if (!profile) return { text: 'Loading...', color: 'gray' };
-  
-  switch (profile.subscription_tier) {
-    case 'free':
-      return { text: 'Free', color: 'gray' };
-    case 'esl_only':
-      return { text: 'ESL', color: 'orange' };
-    case 'clil_plus':
-      return { text: 'CLIL + Language Support', color: 'purple' };
-    case 'complete_plan':
-      return { text: 'Complete', color: 'green' };
-    default:
-      return { text: 'Free', color: 'gray' };
-  }
-};
+    if (!profile) return { text: 'Loading...', color: 'gray' };
+    
+    switch (profile.subscription_tier) {
+      case 'free':
+        return { text: 'Free', color: 'gray' };
+      case 'esl_only':
+        return { text: 'ESL', color: 'orange' };
+      case 'clil_plus':
+        return { text: 'CLIL + Language Support', color: 'purple' };
+      case 'complete_plan':
+        return { text: 'Complete', color: 'green' };
+      default:
+        return { text: 'Free', color: 'gray' };
+    }
+  };
 
   const getLessonStatus = (lesson: Lesson, index: number) => {
     const lessonProgress = getProgressForLesson(lesson.id);
@@ -875,77 +896,95 @@ export default function Dashboard() {
   };
 
   // CONTINUE LEARNING COMPONENT
-  const ContinueLearningSection = () => {
-    if (!lessons.length || !progressionData) return null;
+const ContinueLearningSection = () => {
+  if (!lessons.length || !progressionData) return null;
 
-    const nextLesson = lessons.find((lesson, index) => {
-      const isAvailable = index < progressionData.available_lessons;
-      const lessonProgress = progress.find(p => p.lesson_id === lesson.id);
-      const isCompleted = lessonProgress?.is_completed || false;
-      return isAvailable && !isCompleted;
-    });
+  // Count available lessons (not completed)
+  const availableLessons = lessons.filter((lesson, index) => {
+    const isAvailable = lesson.week_number === 999 || index < progressionData.available_lessons;
+    const lessonProgress = progress.find(p => p.lesson_id === lesson.id);
+    const isCompleted = lessonProgress?.is_completed || false;
+    return isAvailable && !isCompleted;
+  });
 
-    if (!nextLesson) {
-      return (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trophy className="w-8 h-8 text-green-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-green-900 mb-2">All Caught Up! 🎉</h2>
-            <p className="text-green-700 mb-4">
-              You've completed all available lessons. New content unlocks in {progressionData.days_until_next_unlock} days!
-            </p>
-            <button
-              onClick={() => router.push('/lessons')}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
-            >
-              Review Completed Lessons
-            </button>
-          </div>
-        </div>
-      );
-    }
-
+  if (availableLessons.length === 0) {
     return (
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Play className="w-8 h-8 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-blue-900 mb-1">Continue Learning</h2>
-              <p className="text-blue-700 font-medium">
-                {String(nextLesson.week_number).padStart(3, '0')}. {nextLesson.title}
-              </p>
-              <div className="flex items-center space-x-3 mt-2">
-                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                  nextLesson.content_type === 'esl' 
-                    ? 'bg-orange-100 text-orange-800' 
-                    : 'bg-purple-100 text-purple-800'
-                }`}>
-                  {nextLesson.content_type.toUpperCase()}
-                </span>
-                <span className="text-sm text-blue-600">
-                  ⏱️ {nextLesson.estimated_duration} min
-                </span>
-                <span className="text-sm text-blue-600 capitalize">
-                  📚 {nextLesson.level}
-                </span>
-              </div>
-            </div>
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-8">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trophy className="w-8 h-8 text-green-600" />
           </div>
+          <h2 className="text-2xl font-bold text-green-900 mb-2">All Caught Up! 🎉</h2>
+          <p className="text-green-700 mb-4">
+            You've completed all available lessons. New content unlocks in {progressionData.days_until_next_unlock} days!
+          </p>
           <button
-            onClick={() => router.push(`/lesson/${nextLesson.id}`)}
-            className="px-8 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+            onClick={() => router.push('/lessons')}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
           >
-            Start Lesson →
+            Review Completed Lessons
           </button>
         </div>
       </div>
     );
-  };
+  }
+
+  // Show overview of available content instead of picking one lesson
+  const eslLessons = availableLessons.filter(l => l.content_type === 'esl');
+  const clilLessons = availableLessons.filter(l => l.content_type === 'clil');
+  const samples = availableLessons.filter(l => l.week_number === 999);
+  const regular = availableLessons.filter(l => l.week_number !== 999);
+
+  return (
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
+            <Play className="w-8 h-8 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-blue-900 mb-1">Continue Learning</h2>
+            <p className="text-blue-700 font-medium mb-2">
+              {availableLessons.length} lesson{availableLessons.length > 1 ? 's' : ''} available
+            </p>
+            
+            {/* Show breakdown of available content */}
+            <div className="flex items-center space-x-4 text-sm">
+              {samples.length > 0 && (
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full font-medium">
+                  {samples.length} Sample{samples.length > 1 ? 's' : ''}
+                </span>
+              )}
+              {eslLessons.length > 0 && (
+                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+                  {eslLessons.length} ESL
+                </span>
+              )}
+              {clilLessons.length > 0 && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
+                  {clilLessons.length} CLIL
+                </span>
+              )}
+            </div>
+            
+            {/* Anti-binge protection info */}
+            {progressionData.lessons_needed_for_unlock > 0 && (
+              <p className="text-xs text-blue-600 mt-2">
+                Complete {progressionData.lessons_needed_for_unlock} more to unlock additional content
+              </p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={() => router.push('/lessons')}
+          className="px-8 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+        >
+          Choose Lesson →
+        </button>
+      </div>
+    </div>
+  );
+};
 
   // VOCABULARY REVIEW SECTION
   const VocabularyReviewSection = () => {
@@ -975,53 +1014,6 @@ export default function Dashboard() {
             Start Review (2 min)
           </button>
         </div>
-      </div>
-    );
-  };
-
-  // WEEKLY STREAK SECTION
-  const WeeklyStreakSection = () => {
-    if (!streakData) return null;
-
-    return (
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
-          <Flame className="h-5 w-5 text-orange-500" />
-          <span>Learning Streak</span>
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600 mb-1">
-              {streakData.currentStreak}
-            </div>
-            <p className="text-sm text-gray-600">Week Streak</p>
-            <p className="text-xs text-gray-500">consecutive weeks</p>
-          </div>
-          
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-1">
-              {streakData.thisWeekCompleted}
-            </div>
-            <p className="text-sm text-gray-600">This Week</p>
-            <p className="text-xs text-gray-500">lessons completed</p>
-          </div>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Weekly Average:</span>
-            <span className="font-medium text-gray-900">{streakData.weeklyCompletionRate} lessons/week</span>
-          </div>
-        </div>
-
-        {streakData.currentStreak >= 2 && (
-          <div className="mt-3 p-3 bg-orange-50 rounded-lg">
-            <p className="text-sm text-orange-800 font-medium">
-              🔥 You're on fire! Keep your streak going!
-            </p>
-          </div>
-        )}
       </div>
     );
   };
@@ -1073,7 +1065,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center space-x-4">
                 <Link href="/" className="text-2xl font-bold text-blue-600">
-                  Interactive Learning
+                  ELL Interactive Platform
                 </Link>
                 <span className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${
                   badge.color === 'green' ? 'bg-green-50 text-green-800 border-green-200' :
@@ -1100,6 +1092,7 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {/* Main Container with proper responsive constraints */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           
           {/* Welcome Section */}
@@ -1118,353 +1111,203 @@ export default function Dashboard() {
           {/* VOCABULARY REVIEW - When available */}
           <VocabularyReviewSection />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          {/* Main Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* Learning Progress Overview */}
-            {progressionData && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                <h2 className="text-2xl font-bold text-blue-900 mb-4 flex items-center space-x-2">
-                  <Target className="h-6 w-6" />
-                  <span>Learning Progress</span>
-                </h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-blue-800 font-medium">Lessons Completed</span>
-                      <span className="text-blue-900 font-bold text-lg">
-                        {progressionData.total_completed}/{progressionData.available_lessons}
-                      </span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-3">
-                      <div 
-                        className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                        style={{ 
-                          width: `${Math.min((progressionData.total_completed / progressionData.available_lessons) * 100, 100)}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-sm text-blue-700 mt-2">
-                      {progressionData.available_lessons - progressionData.total_completed} lessons to go
-                    </p>
-                  </div>
-
-                  <div>
-                    {progressionData.lessons_needed_for_unlock > 0 ? (
-                      <>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-blue-800 font-medium">Next Unlock</span>
-                          <span className="text-blue-900 font-bold text-lg">
-                            {progressionData.lessons_needed_for_unlock} needed
-                          </span>
-                        </div>
-                        <div className="w-full bg-yellow-200 rounded-full h-3">
-                          <div 
-                            className="bg-yellow-500 h-3 rounded-full transition-all duration-500"
-                            style={{ 
-                              width: `${Math.max(100 - (progressionData.lessons_needed_for_unlock / 3) * 100, 0)}%` 
-                            }}
-                          ></div>
-                        </div>
-                        <p className="text-sm text-blue-700 mt-2">
-                          Complete {progressionData.lessons_needed_for_unlock} more lesson{progressionData.lessons_needed_for_unlock > 1 ? 's' : ''} to unlock new content
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-blue-800 font-medium">Next Unlock</span>
-                          <span className="text-blue-900 font-bold text-lg">
-                            {progressionData.days_until_next_unlock}d
-                          </span>
-                        </div>
-                        <div className="w-full bg-green-200 rounded-full h-3">
-                          <div className="bg-green-500 h-3 rounded-full w-full"></div>
-                        </div>
-                        <p className="text-sm text-blue-700 mt-2">
-                          {progressionData.unlock_rate} new lesson{progressionData.unlock_rate > 1 ? 's' : ''} unlock in {progressionData.days_until_next_unlock} day{progressionData.days_until_next_unlock > 1 ? 's' : ''}!
-                        </p>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progression Status */}
-                <div className="mt-6 p-4 bg-white rounded-lg">
-                  <div className="flex items-center justify-between">
+            {/* Main Content - Left Side */}
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Learning Progress Overview */}
+              {progressionData && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                  <h2 className="text-2xl font-bold text-blue-900 mb-4 flex items-center space-x-2">
+                    <Target className="h-6 w-6" />
+                    <span>Learning Progress</span>
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h3 className="font-bold text-gray-900">
-                        {progressionData.is_caught_up ? (
-                          <span className="text-green-600">✨ You're caught up!</span>
-                        ) : (
-                          <span className="text-blue-600">⚡ Catch-up mode active</span>
-                        )}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {progressionData.is_caught_up 
-                          ? `Unlocking ${progressionData.unlock_rate} lesson per week`
-                          : `Unlocking ${progressionData.unlock_rate} lessons per week until caught up`
-                        }
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-blue-800 font-medium">Lessons Completed</span>
+                        <span className="text-blue-900 font-bold text-lg">
+                          {progressionData.total_completed}/{progressionData.available_lessons}
+                        </span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-3">
+                        <div 
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                          style={{ 
+                            width: `${Math.min((progressionData.total_completed / progressionData.available_lessons) * 100, 100)}%` 
+                          }}
+                        ></div>
+                      </div>
+                      <p className="text-sm text-blue-700 mt-2">
+                        {progressionData.available_lessons - progressionData.total_completed} lessons to go
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-500">Week {progressionData.weeks_since_join}</p>
-                      <p className="text-sm text-gray-500">Current: Week {progressionData.current_week}</p>
+
+                    <div>
+                      {progressionData.lessons_needed_for_unlock > 0 ? (
+                        <>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-blue-800 font-medium">Next Unlock</span>
+                            <span className="text-blue-900 font-bold text-lg">
+                              {progressionData.lessons_needed_for_unlock} needed
+                            </span>
+                          </div>
+                          <div className="w-full bg-yellow-200 rounded-full h-3">
+                            <div 
+                              className="bg-yellow-500 h-3 rounded-full transition-all duration-500"
+                              style={{ 
+                                width: `${Math.max(100 - (progressionData.lessons_needed_for_unlock / 3) * 100, 0)}%` 
+                              }}
+                            ></div>
+                          </div>
+                          <p className="text-sm text-blue-700 mt-2">
+                            Complete {progressionData.lessons_needed_for_unlock} more lesson{progressionData.lessons_needed_for_unlock > 1 ? 's' : ''} to unlock new content
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-blue-800 font-medium">Next Unlock</span>
+                            <span className="text-blue-900 font-bold text-lg">
+                              {progressionData.days_until_next_unlock}d
+                            </span>
+                          </div>
+                          <div className="w-full bg-green-200 rounded-full h-3">
+                            <div className="bg-green-500 h-3 rounded-full w-full"></div>
+                          </div>
+                          <p className="text-sm text-blue-700 mt-2">
+                            {progressionData.unlock_rate} new lesson{progressionData.unlock_rate > 1 ? 's' : ''} unlock in {progressionData.days_until_next_unlock} day{progressionData.days_until_next_unlock > 1 ? 's' : ''}!
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progression Status */}
+                  <div className="mt-6 p-4 bg-white rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-gray-900">
+                          {progressionData.is_caught_up ? (
+                            <span className="text-green-600">✨ You're caught up!</span>
+                          ) : (
+                            <span className="text-blue-600">⚡ Catch-up mode active</span>
+                          )}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {progressionData.is_caught_up 
+                            ? `Unlocking ${progressionData.unlock_rate} lesson per week`
+                            : `Unlocking ${progressionData.unlock_rate} lessons per week until caught up`
+                          }
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">Week {progressionData.weeks_since_join}</p>
+                        <p className="text-sm text-gray-500">Current: Week {progressionData.current_week}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl p-4 shadow-sm border">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <BookOpen className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Completed</p>
+                      <p className="font-bold text-gray-900">{progressionData?.total_completed || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 shadow-sm border">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Avg Score</p>
+                      <p className="font-bold text-gray-900">{averageScore}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 shadow-sm border">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <Flame className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Streak</p>
+                      <p className="font-bold text-gray-900">{streakData?.currentStreak || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 shadow-sm border">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Clock className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600">Time</p>
+                      <p className="font-bold text-gray-900">{formatTime(totalTimeSpent)}</p>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <BookOpen className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Current Level</p>
-                    <p className="font-medium text-gray-900 capitalize">
-                      {profile?.preferred_level || 'Not set'}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => handleLevelChange('beginner')}
-                      disabled={profile?.preferred_level === 'beginner'}
-                      className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        profile?.preferred_level === 'beginner'
-                          ? 'bg-blue-100 text-blue-800 cursor-not-allowed'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Switch to Beginner
-                    </button>
-                    
-                    <button
-                      onClick={() => handleLevelChange('intermediate')}
-                      disabled={profile?.preferred_level === 'intermediate'}
-                      className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        profile?.preferred_level === 'intermediate'
-                          ? 'bg-blue-100 text-blue-800 cursor-not-allowed'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      Switch to Intermediate
-                    </button>
-                  </div>
-                  
-                  <p className="text-xs text-gray-500">
-                    Level changes preserve your completion credit across all content
-                  </p>
-                </div>
-              </div>
-            )
-
-            {/* Achievements */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                <Award className="h-5 w-5 text-blue-600" />
-                <span>Achievements</span>
-              </h3>
-              
-              <div className="space-y-3">
-                {(progressionData?.total_completed || 0) >= 1 && (
-                  <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Star className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">First Lesson!</p>
-                      <p className="text-sm text-gray-600">Started your learning journey</p>
-                    </div>
-                  </div>
-                )}
-                
-                {(progressionData?.total_completed || 0) >= 5 && (
-                  <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
-                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Flame className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Getting Started!</p>
-                      <p className="text-sm text-gray-600">Completed 5 lessons</p>
-                    </div>
-                  </div>
-                )}
-
-                {(progressionData?.total_completed || 0) >= 10 && (
-                  <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Trophy className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Lesson Master!</p>
-                      <p className="text-sm text-gray-600">Completed 10 lessons</p>
-                    </div>
-                  </div>
-                )}
-
-                {averageScore >= 90 && (progressionData?.total_completed || 0) >= 3 && (
-                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">High Achiever!</p>
-                      <p className="text-sm text-gray-600">90%+ average score</p>
-                    </div>
-                  </div>
-                )}
-
-                {progressionData?.is_caught_up && (
-                  <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">All Caught Up!</p>
-                      <p className="text-sm text-gray-600">Reached current content</p>
-                    </div>
-                  </div>
-                )}
-                
-                {!progressionData?.total_completed && (
-                  <div className="text-center py-4">
-                    <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-600 text-sm">Complete lessons to unlock achievements!</p>
-                  </div>
-                )}
-              </div>
-            </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
-              
-              <div className="space-y-3">
-                     
-                <Link 
-                  href="/analytics" 
-                  className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>View Analytics</span>
-                </Link>
-                
-                {profile?.subscription_tier !== 'free' && (
-                  <button 
-                    onClick={handleBillingPortal}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    <span>Billing & Account</span>
-                  </button>
-                )}
-                
-                <Link 
-                  href="/subscribe" 
-                  className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
-                >
-                  <TrendingUp className="h-4 w-4" />
-                  <span>{profile?.subscription_tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-     {/* VOCABULARY REVIEW MODAL */}
-      {showVocabReview && (
-        <VocabularyReviewModal 
-          vocabularyWords={vocabularyData.vocabularyWords}
-          onClose={() => setShowVocabReview(false)}
-          onComplete={(score) => {
-            setShowVocabReview(false);
-            console.log('Vocabulary review completed with score:', score);
-            // You could save this score to the database here if desired
-          }}
-        />
-      )}
-
-            {/* Sidebar */}
+            {/* Sidebar - Right Side */}
             <div className="space-y-6">
               
-              {/* WEEKLY STREAK - New component */}
-              <WeeklyStreakSection />
-
-              {/* Subscription Status */}
-              {profile?.subscription_tier === 'free' ? (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center space-x-2">
-                    <Trophy className="h-5 w-5" />
-                    <span>Unlock Full Access</span>
-                  </h3>
-                  <p className="text-blue-700 mb-4 text-sm">
-                    You're on the free plan with sample lessons only. Upgrade to access our complete learning system!
-                  </p>
-                  <div className="space-y-2 text-sm text-blue-600 mb-4">
-                    <p>• Complete lesson progression system</p>
-                    <p>• ESL News + CLIL Science content</p>
-                    <p>• Multi-language support options</p>
-                    <p>• Progress tracking & achievements</p>
-                  </div>
-                  <Link 
-                    href="/subscribe" 
-                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                  >
-                    Choose Your Plan
-                  </Link>
-                </div>
-              ) : (
+              {/* Weekly Streak */}
+              {streakData && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    <span>Subscription</span>
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    <span>Learning Streak</span>
                   </h3>
                   
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-gray-600">Current Plan</p>
-                      <p className="font-medium text-gray-900 capitalize">
-                        {profile?.subscription_tier?.replace('_', ' ')}
-                      </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-orange-600 mb-1">
+                        {streakData.currentStreak}
+                      </div>
+                      <p className="text-sm text-gray-600">Week Streak</p>
+                      <p className="text-xs text-gray-500">consecutive weeks</p>
                     </div>
                     
-                    <div>
-                      <p className="text-sm text-gray-600">Status</p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        profile?.subscription_status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {profile?.subscription_status}
-                      </span>
-                    </div>
-                    
-                    <div className="pt-3 space-y-2">
-                      <button 
-                        onClick={() => router.push('/subscribe?upgrade=true')}
-                        className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                      >
-                        Change Plan
-                      </button>
-                      
-                      <button 
-                        onClick={handleBillingPortal}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                      >
-                        Manage Billing
-                      </button>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600 mb-1">
+                        {streakData.thisWeekCompleted}
+                      </div>
+                      <p className="text-sm text-gray-600">This Week</p>
+                      <p className="text-xs text-gray-500">lessons completed</p>
                     </div>
                   </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Weekly Average:</span>
+                      <span className="font-medium text-gray-900">{streakData.weeklyCompletionRate} lessons/week</span>
+                    </div>
+                  </div>
+
+                  {streakData.currentStreak >= 2 && (
+                    <div className="mt-3 p-3 bg-orange-50 rounded-lg">
+                      <p className="text-sm text-orange-800 font-medium">
+                        🔥 You're on fire! Keep your streak going!
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1480,7 +1323,7 @@ export default function Dashboard() {
                     <div>
                       <p className="text-sm text-gray-600">Current Level</p>
                       <p className="font-medium text-gray-900 capitalize">
-                        {profile?.preferred_level || 'Not set'}
+                        {profile?.preferred_level || 'Both'}
                       </p>
                     </div>
                     
@@ -1594,12 +1437,79 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Subscription Status */}
+              {profile?.subscription_tier === 'free' ? (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center space-x-2">
+                    <Trophy className="h-5 w-5" />
+                    <span>Unlock Full Access</span>
+                  </h3>
+                  <p className="text-blue-700 mb-4 text-sm">
+                    You're on the free plan with sample lessons only. Upgrade to access our complete learning system!
+                  </p>
+                  <div className="space-y-2 text-sm text-blue-600 mb-4">
+                    <p>• Complete lesson progression system</p>
+                    <p>• ESL News + CLIL Science content</p>
+                    <p>• Multi-language support options</p>
+                    <p>• Progress tracking & achievements</p>
+                  </div>
+                  <Link 
+                    href="/subscribe" 
+                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                  >
+                    Choose Your Plan
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                    <span>Subscription</span>
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Current Plan</p>
+                      <p className="font-medium text-gray-900 capitalize">
+                        {profile?.subscription_tier?.replace('_', ' ')}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-gray-600">Status</p>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        profile?.subscription_status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {profile?.subscription_status}
+                      </span>
+                    </div>
+                    
+                    <div className="pt-3 space-y-2">
+                      <button 
+                        onClick={() => router.push('/subscribe?upgrade=true')}
+                        className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                      >
+                        Change Plan
+                      </button>
+                      
+                      <button 
+                        onClick={handleBillingPortal}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                      >
+                        Manage Billing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Quick Actions */}
               <div className="bg-white rounded-xl p-6 shadow-sm border">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
                 
                 <div className="space-y-3">
-                        
                   <Link 
                     href="/analytics" 
                     className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
@@ -1629,6 +1539,21 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-   </>
+        </div>
+      </div>
+
+      {/* VOCABULARY REVIEW MODAL */}
+      {showVocabReview && (
+        <VocabularyReviewModal 
+          vocabularyWords={vocabularyData.vocabularyWords}
+          onClose={() => setShowVocabReview(false)}
+          onComplete={(score) => {
+            setShowVocabReview(false);
+            console.log('Vocabulary review completed with score:', score);
+            // You could save this score to the database here if desired
+          }}
+        />
+      )}
+    </>
   );
 }
