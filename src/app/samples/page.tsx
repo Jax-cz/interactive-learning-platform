@@ -270,47 +270,54 @@ function SamplesContent() {
           </div>
         )}
 
-        {/* Call to Action */}
-        {samples.length > 0 && (
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              Ready for unlimited access?
-            </h3>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              {content === 'complete-plan' 
-                ? "Get unlimited access to all ESL news content AND CLIL science lessons with full language support."
-                : content === 'clil-plus'
-                ? "Get unlimited access to all CLIL science lessons with full language support in your chosen language."
-                : "Get unlimited access to all ESL news-based English lessons with fresh content every week."
-              }
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href={`/register?plan=${content}&level=${level}&language=${language}`}
-                className={`bg-${getPlanColor()}-600 text-white px-8 py-4 rounded-lg hover:bg-${getPlanColor()}-700 font-medium text-lg transition-colors shadow-lg hover:shadow-xl`}
-              >
-                {getPlanIcon()} Get Full Access
-              </Link>
-              
-              <Link
-                href="/"
-                className="text-gray-600 hover:text-gray-900 font-medium px-4 py-2"
-              >
-                ← Choose Different Plan
-              </Link>
-            </div>
+        {/* Call to Action - Updated for flexible registration */}
+{samples.length > 0 && (
+  <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">
+      Love what you see?
+    </h3>
+    <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
+      Register now to access all our sample lessons and choose the perfect learning plan for you
+    </p>
+    
+    <div className="grid sm:grid-cols-2 gap-4 max-w-lg mx-auto mb-6">
+      <Link
+        href="/register"
+        className="bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 font-medium text-lg transition-colors shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+      >
+        <span>🚀</span>
+        <span>Register for Free</span>
+      </Link>
+      
+      <Link
+        href="/"
+        className="bg-gray-100 text-gray-700 px-6 py-4 rounded-lg hover:bg-gray-200 font-medium transition-colors flex items-center justify-center space-x-2"
+      >
+        <span>🔍</span>
+        <span>Try More Samples</span>
+      </Link>
+    </div>
 
-            <div className="mt-6 text-sm text-gray-500">
-              <span className="inline-flex items-center">
-                <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                New lessons every week • Cancel anytime • Mobile friendly
-              </span>
-            </div>
-          </div>
-        )}
+    <div className="text-sm text-gray-500 space-y-1">
+      <p className="font-medium">After registration you'll get:</p>
+      <div className="flex flex-wrap justify-center gap-4 text-xs">
+        <span>✓ Access to ALL sample lessons</span>
+        <span>✓ Both ESL and CLIL content</span>
+        <span>✓ All levels and languages</span>
+        <span>✓ Choose your plan later</span>
+      </div>
+    </div>
+    
+    <div className="mt-6 text-sm text-gray-500">
+      <span className="inline-flex items-center">
+        <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+        New lessons every week • Cancel anytime • Mobile friendly
+      </span>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

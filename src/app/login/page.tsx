@@ -5,6 +5,21 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, resetPassword } from '@/lib/auth';
 
+// Helper function for user-friendly error messages
+const getFriendlyErrorMessage = (error: string) => {
+  if (error.includes('Email not confirmed') || error.includes('email_not_confirmed')) {
+    return "Please check your email and click the confirmation link to activate your account";
+  }
+  if (error.includes('Invalid login credentials') || error.includes('invalid_credentials')) {
+    return "Incorrect email or password. Please check your credentials and try again";
+  }
+  if (error.includes('Too many requests')) {
+    return "Too many login attempts. Please wait a moment and try again";
+  }
+  
+  return error; // Return original error for other cases
+};
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -139,7 +154,7 @@ export default function LoginPage() {
                         Error
                       </h3>
                       <div className="mt-2 text-sm text-red-700">
-                        {error}
+                        {getFriendlyErrorMessage(error)}
                       </div>
                     </div>
                   </div>
@@ -233,7 +248,7 @@ export default function LoginPage() {
                       Login Error
                     </h3>
                     <div className="mt-2 text-sm text-red-700">
-                      {error}
+                      {getFriendlyErrorMessage(error)}
                     </div>
                   </div>
                 </div>
