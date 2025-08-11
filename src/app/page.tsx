@@ -169,19 +169,24 @@ export default function HomePage() {
         )}
                         
         {/* Step 2: Content Type Selection - NOW WITH 3 OPTIONS */}
-        {selectedLevel && !selectedContentType && (
-          <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-                Choose Your Content Type
-              </h2>
-              <button
-                onClick={resetToLevelSelection}
-                className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-              >
-                ← Back to Level
-              </button>
-            </div>
+{selectedLevel && !selectedContentType && (
+  <div className="animate-fade-in">
+    <div className="flex items-center justify-between mb-6">
+      <div>
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+          Choose Sample Lessons to Try
+        </h2>
+        <p className="text-xl text-gray-600 mt-2">
+          Experience our interactive lessons before choosing your plan
+        </p>
+      </div>
+      <button
+        onClick={resetToLevelSelection}
+        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+      >
+        ← Back to Level
+      </button>
+    </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* ESL Option */}
