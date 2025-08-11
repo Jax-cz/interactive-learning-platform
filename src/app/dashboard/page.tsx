@@ -504,7 +504,7 @@ export default function Dashboard() {
             email: currentUser.email!,
             preferred_content_type: null,
             preferred_level: null,
-            preferred_language: 'en',
+            language_support: 'en',
             subscription_tier: 'free',
             subscription_status: 'inactive',
             onboarding_completed: false,
@@ -615,41 +615,91 @@ export default function Dashboard() {
     }
   };
 
-  const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData) => {
-    try {
-      let query = supabase
-        .from('lessons')
-        .select('*')
-        .eq('is_published', true)
-        .order('week_number', { ascending: true });
+   const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData) => {
+  try {
+    let query = supabase
+      .from('lessons')
+      .select('*')
+      .eq('is_published', true)
+      .order('week_number', { ascending: true });
 
-      if (access.canAccessESL && access.canAccessCLIL) {
-        // Complete plan - show all
-      } else if (access.canAccessESL) {
-        query = query.eq('content_type', 'esl');
-      } else if (access.canAccessCLIL) {
-        query = query.eq('content_type', 'clil');
-      } else {
-        query = query.eq('is_sample', true);
-      }
-
-      if (profile?.preferred_level) {
-        query = query.eq('level', profile.preferred_level);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const sortedLessons = (data || [])
-        .sort((a, b) => a.week_number - b.week_number)
-        .slice(0, progression.available_lessons + 5);
-
-      setLessons(sortedLessons);
-    } catch (err: any) {
-      console.error('Lessons loading error:', err);
+    // Content type filtering
+    if (access.canAccessESL && access.canAccessCLIL) {
+      // Complete plan - show both ESL and CLIL, but filter CLIL by language support
+      // No content_type filter here - we'll handle language filtering below
+    } else if (access.canAccessESL) {
+      // ESL only
+      query = query.eq('content_type', 'esl');
+    } else if (access.canAccessCLIL) {
+      // CLIL only
+      query = query.eq('content_type', 'clil');
+    } else {
+      // Free plan - samples only
+      query = query.eq('is_sample', true);
     }
-  };
+
+    // Level filtering
+    if (profile?.preferred_level) {
+      query = query.eq('level', profile.preferred_level);
+    }
+
+    // Execute the initial query
+    const { data: allLessons, error } = await query;
+    if (error) throw error;
+
+    // Post-query filtering for language support (Complete Plan and CLIL Plus)
+    let filteredLessons = allLessons || [];
+    
+    if (access.canAccessESL && access.canAccessCLIL) {
+      // Complete Plan: Show ESL lessons + CLIL lessons matching user's language support
+      const userLanguageSupport = profile?.language_support || 'en';
+      
+      filteredLessons = (allLessons || []).filter(lesson => {
+        if (lesson.content_type === 'esl') {
+          return true; // Always show ESL lessons for Complete Plan
+        } else if (lesson.content_type === 'clil') {
+          return lesson.language_support === userLanguageSupport; // Filter CLIL by language support
+        }
+        return false;
+      });
+    } else if (access.canAccessCLIL) {
+      // CLIL Plus: Show only CLIL lessons matching user's language support
+      const userLanguageSupport = profile?.language_support || 'en';
+      
+      filteredLessons = (allLessons || []).filter(lesson => {
+        return lesson.content_type === 'clil' && lesson.language_support === userLanguageSupport;
+      });
+    }
+    // For ESL only and free plans, use the original filtered results
+
+    // Apply progression limits
+    const sortedLessons = filteredLessons
+      .sort((a, b) => a.week_number - b.week_number)
+      .slice(0, progression.available_lessons + 5);
+
+    console.log('🔍 Lesson filtering debug:', {
+      userProfile: {
+        subscription_tier: profile?.subscription_tier,
+        language_support: profile?.language_support,
+        preferred_level: profile?.preferred_level
+      },
+      access: access,
+      totalLessonsFound: (allLessons || []).length,
+      filteredLessonsCount: filteredLessons.length,
+      finalLessonsCount: sortedLessons.length,
+      sampleLessons: sortedLessons.slice(0, 3).map(l => ({
+        title: l.title,
+        content_type: l.content_type,
+        language_support: l.language_support,
+        level: l.level
+      }))
+    });
+
+    setLessons(sortedLessons);
+  } catch (err: any) {
+    console.error('Lessons loading error:', err);
+  }
+};
 
   const loadProgress = async (userId: string) => {
     try {
@@ -777,23 +827,21 @@ export default function Dashboard() {
   };
 
   const getSubscriptionBadge = () => {
-    if (!profile) return { text: 'Loading...', color: 'gray' };
-    
-    switch (profile.subscription_tier) {
-      case 'free':
-        return { text: 'Free', color: 'gray' };
-      case 'esl_only':
-        return { text: 'ESL Only', color: 'orange' };
-      case 'clil_only':
-        return { text: 'CLIL Only', color: 'purple' };
-      case 'clil_plus':
-        return { text: 'CLIL Plus', color: 'blue' };
-      case 'complete_plan':
-        return { text: 'Complete Plan', color: 'green' };
-      default:
-        return { text: 'Free', color: 'gray' };
-    }
-  };
+  if (!profile) return { text: 'Loading...', color: 'gray' };
+  
+  switch (profile.subscription_tier) {
+    case 'free':
+      return { text: 'Free Plan', color: 'gray' };
+    case 'esl_only':
+      return { text: 'ESL Plan', color: 'orange' };
+    case 'clil_plus':
+      return { text: 'CLIL + Language Support', color: 'purple' };
+    case 'complete_plan':
+      return { text: 'Complete Plan', color: 'green' };
+    default:
+      return { text: 'Free Plan', color: 'gray' };
+  }
+};
 
   const getLessonStatus = (lesson: Lesson, index: number) => {
     const lessonProgress = getProgressForLesson(lesson.id);

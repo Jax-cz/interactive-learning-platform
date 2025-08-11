@@ -7,11 +7,11 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   typescript: true,
 });
 
-// Subscription plan configurations with actual Stripe Price IDs
+// Subscription plan configurations - UPDATED TO 3 TIERS ONLY
 export const SUBSCRIPTION_PLANS = {
   esl_only: {
     id: 'esl_only',
-    name: 'ESL Only',
+    name: 'ESL Plan',
     description: 'Access to all ESL news lessons for adults',
     price: 600, // $6.00 in cents
     priceId: 'price_1RrIDC1Bs1c9VoEoSflvqHq4', // Your actual Stripe Price ID
@@ -20,31 +20,16 @@ export const SUBSCRIPTION_PLANS = {
     features: [
       'All ESL news lessons',
       'Both beginner and intermediate levels',
-      'Progress tracking',
-      'Weekly new content'
-    ]
-  },
-  clil_only: {
-    id: 'clil_only', 
-    name: 'CLIL Only',
-    description: 'Access to all CLIL science lessons (English only)',
-    price: 600, // $6.00 in cents
-    priceId: 'price_1RrIE21Bs1c9VoEo1ada7Gt3', // Your actual Stripe Price ID
-    currency: 'usd',
-    interval: 'month',
-    features: [
-      'All CLIL science lessons',
-      'Both beginner and intermediate levels',
-      'English language only',
+      'Real-world current events',
       'Progress tracking',
       'Weekly new content'
     ]
   },
   clil_plus: {
     id: 'clil_plus',
-    name: 'CLIL Plus',
-    description: 'CLIL lessons with multi-language support',
-    price: 800, // $8.00 in cents
+    name: 'CLIL + Language Support',
+    description: 'CLIL science lessons with multi-language support',
+    price: 600, // $6.00 in cents - SAME PRICE AS ESL
     priceId: 'price_1RrIFA1Bs1c9VoEodN8JLWdx', // Your actual Stripe Price ID
     currency: 'usd', 
     interval: 'month',
@@ -52,17 +37,16 @@ export const SUBSCRIPTION_PLANS = {
       'All CLIL science lessons',
       'Both beginner and intermediate levels',
       'Multi-language support (Czech, German, French, Spanish, Polish)',
-      'Vocabulary translations',
+      'Vocabulary translations in your native language',
       'Progress tracking',
-      'Weekly new content',
-      'Premium support'
+      'Weekly new content'
     ]
   },
   complete_plan: {
     id: 'complete_plan',
-    name: 'Complete Learning Plan',
-    description: 'Full access to both ESL and CLIL content - choose your language support level',
-    price: 1000, // $10.00 in cents
+    name: 'Complete Plan',
+    description: 'Everything! ESL + CLIL with language support of your choice',
+    price: 900, // $9.00 in cents - BEST VALUE
     priceId: 'price_1RrIGT1Bs1c9VoEo6IRvK0YC', // Your actual Stripe Price ID
     currency: 'usd',
     interval: 'month',
@@ -70,17 +54,15 @@ export const SUBSCRIPTION_PLANS = {
       'All ESL news lessons (adults)',
       'All CLIL science lessons (teenagers)', 
       'Both beginner and intermediate levels',
-      'Choose: English only OR Multi-language support',
+      'Multi-language support for CLIL content',
+      'Choose your language support level',
       'Progress tracking across all content',
       'Weekly new content in both categories',
-      'Best value - includes everything'
+      'Best value - save $3/month vs separate plans'
     ],
     isBundle: true,
-    savings: 'Save $2-4/month vs separate plans',
-    options: [
-      'English only (ESL + CLIL)',
-      'With language support (ESL + CLIL Plus)'
-    ]
+    savings: 'Save $3/month vs separate plans',
+    popular: true
   }
 };
 
@@ -100,4 +82,9 @@ export function formatPrice(cents: number, currency: string = 'usd'): string {
     style: 'currency',
     currency: currency.toUpperCase(),
   }).format(cents / 100);
+}
+
+// Get all available plans (for subscription page)
+export function getAllPlans() {
+  return Object.values(SUBSCRIPTION_PLANS);
 }

@@ -130,24 +130,24 @@ async function handleSubscriptionCreated(subscription: any) {
       return;
     }
 
-    // Create subscription record
-    const { error: subError } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: user.id,
+    // Update user with new subscription info
+    const planType = getPlanTypeFromPriceId(priceId);
+    
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        subscription_tier: planType,
+        subscription_status: status === 'active' ? 'active' : 'inactive',
         stripe_subscription_id: subscriptionId,
-        stripe_customer_id: customerId,
-        stripe_price_id: priceId,
-        plan_type: getPlanTypeFromPriceId(priceId),
-        status: status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
-      });
+        subscription_start_date: new Date(subscription.current_period_start * 1000).toISOString(),
+        subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString()
+      })
+      .eq('id', user.id);
 
-    if (subError) {
-      console.error('Error creating subscription record:', subError);
+    if (updateError) {
+      console.error('Error updating user subscription:', updateError);
     } else {
-      console.log(`Created subscription record for user ${user.id}`);
+      console.log(`Created subscription for user ${user.id} with plan ${planType}`);
     }
 
   } catch (error) {
@@ -165,45 +165,33 @@ async function handleSubscriptionUpdated(subscription: any) {
   const planType = getPlanTypeFromPriceId(priceId);
   
   try {
-    // Update subscription record
-    const { error: subError } = await supabase
-      .from('subscriptions')
-      .update({
-        plan_type: planType,
-        status: status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null
-      })
-      .eq('stripe_subscription_id', subscriptionId);
-
-    if (subError) {
-      console.error('Error updating subscription:', subError);
-      return;
-    }
-
-    // Update user subscription tier
-    const { data: subData } = await supabase
-      .from('subscriptions')
-      .select('user_id')
+    // Find user by subscription ID
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
-    if (subData) {
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          subscription_tier: planType,
-          subscription_status: status === 'active' ? 'active' : 'inactive'
-        })
-        .eq('id', subData.user_id);
+    if (userError || !user) {
+      console.error('User not found for subscription:', subscriptionId);
+      return;
+    }
 
-      if (userError) {
-        console.error('Error updating user subscription tier:', userError);
-      } else {
-        console.log(`Updated user ${subData.user_id} to plan ${planType}`);
-      }
+    // Update user subscription
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        subscription_tier: planType,
+        subscription_status: status === 'active' ? 'active' : 'inactive',
+        subscription_start_date: new Date(subscription.current_period_start * 1000).toISOString(),
+        subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error updating user subscription:', updateError);
+    } else {
+      console.log(`Updated user ${user.id} to plan ${planType} with status ${status}`);
     }
 
   } catch (error) {
@@ -218,42 +206,32 @@ async function handleSubscriptionDeleted(subscription: any) {
   const subscriptionId = subscription.id;
   
   try {
-    // Update subscription record
-    const { error: subError } = await supabase
-      .from('subscriptions')
-      .update({
-        status: 'canceled',
-        canceled_at: new Date().toISOString()
-      })
-      .eq('stripe_subscription_id', subscriptionId);
+    // Find user by subscription ID
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('stripe_subscription_id', subscriptionId)
+      .single();
 
-    if (subError) {
-      console.error('Error updating canceled subscription:', subError);
+    if (userError || !user) {
+      console.error('User not found for subscription:', subscriptionId);
       return;
     }
 
     // Update user to free tier
-    const { data: subData } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('stripe_subscription_id', subscriptionId)
-      .single();
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        subscription_tier: 'free',
+        subscription_status: 'inactive',
+        subscription_end_date: new Date().toISOString()
+      })
+      .eq('id', user.id);
 
-    if (subData) {
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          subscription_tier: 'free',
-          subscription_status: 'inactive',
-          subscription_end_date: new Date().toISOString()
-        })
-        .eq('id', subData.user_id);
-
-      if (userError) {
-        console.error('Error updating user to free tier:', userError);
-      } else {
-        console.log(`Moved user ${subData.user_id} to free tier`);
-      }
+    if (updateError) {
+      console.error('Error updating user to free tier:', updateError);
+    } else {
+      console.log(`Moved user ${user.id} to free tier`);
     }
 
   } catch (error) {
@@ -268,22 +246,22 @@ async function handlePaymentSucceeded(invoice: any) {
   const subscriptionId = invoice.subscription;
   
   if (subscriptionId) {
-    // Ensure user subscription is active
-    const { data: subData } = await supabase
-      .from('subscriptions')
-      .select('user_id, plan_type')
+    // Find user and ensure subscription is active
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
-    if (subData) {
+    if (user) {
       await supabase
         .from('users')
         .update({
           subscription_status: 'active'
         })
-        .eq('id', subData.user_id);
+        .eq('id', user.id);
 
-      console.log(`Confirmed active subscription for user ${subData.user_id}`);
+      console.log(`Confirmed active subscription for user ${user.id}`);
     }
   }
 }
@@ -295,34 +273,41 @@ async function handlePaymentFailed(invoice: any) {
   const subscriptionId = invoice.subscription;
   
   if (subscriptionId) {
-    // Set user to past_due status
-    const { data: subData } = await supabase
-      .from('subscriptions')
-      .select('user_id')
+    // Find user and set to past_due status
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
-    if (subData) {
+    if (user) {
       await supabase
         .from('users')
         .update({
           subscription_status: 'past_due'
         })
-        .eq('id', subData.user_id);
+        .eq('id', user.id);
 
-      console.log(`Set user ${subData.user_id} to past_due status`);
+      console.log(`Set user ${user.id} to past_due status`);
     }
   }
 }
 
-// Helper function to map Stripe Price ID to plan type
+// Helper function to map Stripe Price ID to plan type - UPDATED FOR 3 TIERS
 function getPlanTypeFromPriceId(priceId: string): string {
   const priceToPlansMap: { [key: string]: string } = {
     'price_1RrIDC1Bs1c9VoEoSflvqHq4': 'esl_only',
-    'price_1RrIE21Bs1c9VoEo1ada7Gt3': 'clil_only',
+    // REMOVED: 'price_1RrIE21Bs1c9VoEo1ada7Gt3': 'clil_only', - NO LONGER EXISTS
     'price_1RrIFA1Bs1c9VoEodN8JLWdx': 'clil_plus',
     'price_1RrIGT1Bs1c9VoEo6IRvK0YC': 'complete_plan'
   };
   
-  return priceToPlansMap[priceId] || 'free';
+  const planType = priceToPlansMap[priceId];
+  
+  if (!planType) {
+    console.warn(`Unknown price ID: ${priceId}, defaulting to free`);
+    return 'free';
+  }
+  
+  return planType;
 }
