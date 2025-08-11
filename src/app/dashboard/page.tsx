@@ -831,15 +831,15 @@ export default function Dashboard() {
   
   switch (profile.subscription_tier) {
     case 'free':
-      return { text: 'Free Plan', color: 'gray' };
+      return { text: 'Free', color: 'gray' };
     case 'esl_only':
-      return { text: 'ESL Plan', color: 'orange' };
+      return { text: 'ESL', color: 'orange' };
     case 'clil_plus':
       return { text: 'CLIL + Language Support', color: 'purple' };
     case 'complete_plan':
-      return { text: 'Complete Plan', color: 'green' };
+      return { text: 'Complete', color: 'green' };
     default:
-      return { text: 'Free Plan', color: 'gray' };
+      return { text: 'Free', color: 'gray' };
   }
 };
 
@@ -1349,14 +1349,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
               
               <div className="space-y-3">
-                <Link 
-                  href="/lessons" 
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Browse All Lessons</span>
-                </Link>
-                                
+                     
                 <Link 
                   href="/analytics" 
                   className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
@@ -1606,14 +1599,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
                 
                 <div className="space-y-3">
-                  <Link 
-                    href="/lessons" 
-                    className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    <span>Browse All Lessons</span>
-                  </Link>
-                                  
+                        
                   <Link 
                     href="/analytics" 
                     className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"

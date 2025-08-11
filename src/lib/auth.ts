@@ -32,7 +32,7 @@ export async function signUp(email: string, password: string) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+        emailRedirectTo: `${window.location.origin}/login` // Instead of /auth/callback
       }
     })
 
@@ -53,9 +53,9 @@ export async function signUp(email: string, password: string) {
       email: data.user.email!,
       email_verified: false,
       onboarding_completed: false,
-      preferred_content_type: 'esl' as const,
-      preferred_level: 'beginner' as const,
-      language_support: 'en',
+      preferred_content_type: 'both',    // Shows ESL + CLIL samples  
+preferred_level: 'both',           // Shows beginner + intermediate samples
+      language_support: null,
       subscription_tier: 'free' as const,
       subscription_status: 'inactive' as const,
       notifications_enabled: true,
@@ -168,9 +168,9 @@ export async function createUserProfile(userId: string, email: string): Promise<
       email: email,
       email_verified: false,
       onboarding_completed: false,
-      preferred_content_type: 'esl' as const,
-      preferred_level: 'beginner' as const,
-      language_support: 'en',
+      preferred_content_type: 'both',    // Shows ESL + CLIL samples
+preferred_level: 'both',           // Shows beginner + intermediate samples
+      language_support: null,
       subscription_tier: 'free' as const,
       subscription_status: 'inactive' as const,
       notifications_enabled: true,
