@@ -1644,7 +1644,7 @@ if (!lesson) {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Exercise Navigation Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="hidden lg:block lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-8">
               <h3 className="font-semibold text-gray-900 mb-4">Lesson Exercises</h3>
               <nav className="space-y-2">
@@ -1691,7 +1691,7 @@ if (!lesson) {
           </div>
 
           {/* Main Exercise Content */}
-          <div className="lg:col-span-3">
+          <div className="col-span-1 lg:col-span-3">
             <div className="bg-white rounded-lg shadow-sm p-8">
               {/* Lesson Image */}
               <div className="mb-8">
