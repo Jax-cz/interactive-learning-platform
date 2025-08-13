@@ -12,7 +12,7 @@ const SUBSCRIPTION_PLANS = {
     name: 'ESL Plan',
     description: 'Access to all ESL news lessons for adults',
     price: 600, // $6.00 in cents
-    priceId: 'price_1RrIDC1Bs1c9VoEoSflvqHq4',
+    priceId: 'price_1RvfVX1Bs1c9VoEosolWxJlo',
     features: [
       'All ESL news lessons',
       'Beginner and intermediate levels',
@@ -27,7 +27,7 @@ const SUBSCRIPTION_PLANS = {
     name: 'CLIL + Language Support',
     description: 'CLIL science lessons with multi-language support',
     price: 600, // $6.00 in cents  
-    priceId: 'price_1RrIFA1Bs1c9VoEodN8JLWdx',
+    priceId: 'price_1RvfWo1Bs1c9VoEowauWnLQb',
     features: [
       'All CLIL science lessons',
       'Beginner and intermediate levels',
@@ -43,7 +43,7 @@ const SUBSCRIPTION_PLANS = {
     name: 'Complete Plan',
     description: 'Everything! ESL + CLIL with language support of your choice',
     price: 900, // $9.00 in cents
-    priceId: 'price_1RrIGT1Bs1c9VoEo6IRvK0YC',
+    priceId: 'price_1RvfXm1Bs1c9VoEoYDZuJMog',
     features: [
       'All ESL news lessons (adults)',
       'All CLIL science lessons (teenagers)', 
