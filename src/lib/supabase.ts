@@ -3,13 +3,20 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// For frontend/user operations (RLS enforced)
+// For frontend/user operations (RLS enforced) - DEFAULT EXPORT
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // For server-side operations like webhooks (bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+// Only works server-side where SUPABASE_SERVICE_ROLE_KEY is available
+export const supabaseAdmin = (() => {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (serviceKey) {
+    return createClient(supabaseUrl, serviceKey);
+  }
+  // Fallback to regular client if service key not available (frontend)
+  return supabase;
+})();
 
 // Database Types - Updated to match your actual schema
 export type Database = {
