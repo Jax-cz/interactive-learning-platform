@@ -1,7 +1,7 @@
 // src/app/api/webhooks/stripe/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe-server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { headers } from 'next/headers';
 
 // This is your Stripe webhook secret (we'll add this to .env.local)
@@ -92,7 +92,7 @@ async function handleCheckoutCompleted(session: any) {
     const preferred_content_type = getContentTypeFromTier(subscription_tier);
     
     // Update user with complete subscription data
-    const { error: userError } = await supabase
+    const { error: userError } = await supabaseAdmin
       .from('users')
       .update({
         subscription_tier: subscription_tier,
@@ -139,7 +139,7 @@ async function handleSubscriptionCreated(subscription: any) {
   
   try {
     // Find user by Stripe customer ID
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('stripe_customer_id', customerId)
@@ -154,7 +154,7 @@ async function handleSubscriptionCreated(subscription: any) {
     const planType = subscription_tier || getPlanTypeFromPriceId(priceId);
     const preferred_content_type = getContentTypeFromTier(planType);
     
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
         subscription_tier: planType,
@@ -197,7 +197,7 @@ async function handleSubscriptionUpdated(subscription: any) {
   
   try {
     // Find user by subscription ID
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, preferred_level, language_support')
       .eq('stripe_subscription_id', subscriptionId)
@@ -223,7 +223,7 @@ async function handleSubscriptionUpdated(subscription: any) {
     if (level) updateData.preferred_level = level;
     if (language_support) updateData.language_support = language_support;
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
       .eq('id', user.id);
@@ -247,7 +247,7 @@ async function handleSubscriptionDeleted(subscription: any) {
   
   try {
     // Find user by subscription ID
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('stripe_subscription_id', subscriptionId)
@@ -259,7 +259,7 @@ async function handleSubscriptionDeleted(subscription: any) {
     }
 
     // Update user to free tier (keep preferences but remove access)
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
         subscription_tier: 'free',
@@ -288,14 +288,14 @@ async function handlePaymentSucceeded(invoice: any) {
   
   if (subscriptionId) {
     // Find user and ensure subscription is active
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
     if (user) {
-      await supabase
+      await supabaseAdmin
         .from('users')
         .update({
           subscription_status: 'active'
@@ -315,14 +315,14 @@ async function handlePaymentFailed(invoice: any) {
   
   if (subscriptionId) {
     // Find user and set to past_due status
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('stripe_subscription_id', subscriptionId)
       .single();
 
     if (user) {
-      await supabase
+      await supabaseAdmin
         .from('users')
         .update({
           subscription_status: 'past_due'
