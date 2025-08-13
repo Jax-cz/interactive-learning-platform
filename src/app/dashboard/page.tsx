@@ -26,8 +26,10 @@ import {
   CreditCard,
   Bell
 } from 'lucide-react';
+import { filterLessonsForUser, loadAllLessons } from '../../lib/lessonFiltering';
 
-type Lesson = {
+
+export type Lesson = {
   id: string;
   title: string;
   description: string;
@@ -42,6 +44,8 @@ type Lesson = {
   slug: string;
   tags: string[];
   vocabulary_data: any;
+  created_at: string;        // ADD THIS
+  is_published: boolean;     // ADD THIS
 };
 
 type UserProgress = {
@@ -517,18 +521,20 @@ export default function Dashboard() {
         }
       } else {
         setProfile(userProfile);
-      }
+}
 
-      const access = await getContentAccess(currentUser.id);
-      setContentAccess(access);
+const access = await getContentAccess(currentUser.id);
+setContentAccess(access);
 
-      await loadProgress(currentUser.id);
-      const progression = await calculateProgressionData(currentUser.id, userProfile);
-      setProgressionData(progression);
-      await loadLessonsWithProgression(currentUser.id, access, progression);
+await loadProgress(currentUser.id);
+const progression = await calculateProgressionData(currentUser.id, userProfile);
+setProgressionData(progression);
 
-      // Load enhanced features
-      await loadEnhancedData(currentUser.id, access, userProfile);
+// Load enhanced features first
+await loadEnhancedData(currentUser.id, access, userProfile);
+
+// Call loadLessonsWithProgression AFTER everything else is set up
+await loadLessonsWithProgression(currentUser.id, access, progression, userProfile);
 
     } catch (err: any) {
       console.error('Dashboard loading error:', err);
@@ -615,114 +621,39 @@ export default function Dashboard() {
     }
   };
 
-  const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData) => {
-    try {
-      let query = supabase
-        .from('lessons')
-        .select('*')
-        .eq('is_published', true)
-        .order('week_number', { ascending: true });
-
-      // Handle sample lessons (999 week_number) and regular lessons
-      if (access.canAccessESL && access.canAccessCLIL) {
-        // Complete plan - show both ESL and CLIL, but filter CLIL by language support
-        // Include both samples (999) and regular lessons
-      } else if (access.canAccessESL) {
-        // ESL only - include samples and ESL lessons
-        query = query.eq('content_type', 'esl');
-      } else if (access.canAccessCLIL) {
-        // CLIL only - include samples and CLIL lessons
-        query = query.eq('content_type', 'clil');
-      } else {
-        // Free plan - samples only (week_number = 999)
-        query = query.eq('week_number', 999);
-      }
-
-      // Level filtering
-      if (profile?.preferred_level && profile.preferred_level !== 'both') {
-        query = query.eq('level', profile.preferred_level);
-      }
-
-      // Execute the initial query
-      const { data: allLessons, error } = await query;
-      if (error) throw error;
-
-      console.log('🔍 Raw lessons from database:', {
-        total: allLessons?.length,
-        samples: allLessons?.filter(l => l.week_number === 999).length,
-        regular: allLessons?.filter(l => l.week_number !== 999).length,
-        subscription_tier: profile?.subscription_tier,
-        access: access
-      });
-
-      // Post-query filtering for language support (Complete Plan and CLIL Plus)
-      let filteredLessons = allLessons || [];
-      
-      if (access.canAccessESL && access.canAccessCLIL) {
-        // Complete Plan: Show ESL lessons + CLIL lessons matching user's language support
-        const userLanguageSupport = profile?.language_support || 'en';
-        
-        filteredLessons = (allLessons || []).filter(lesson => {
-          if (lesson.content_type === 'esl') {
-            return true; // Always show ESL lessons for Complete Plan
-          } else if (lesson.content_type === 'clil') {
-            return lesson.language_support === userLanguageSupport; // Filter CLIL by language support
-          }
-          return false;
-        });
-      } else if (access.canAccessCLIL) {
-        // CLIL Plus: Show only CLIL lessons matching user's language support
-        const userLanguageSupport = profile?.language_support || 'en';
-        
-        filteredLessons = (allLessons || []).filter(lesson => {
-          return lesson.content_type === 'clil' && lesson.language_support === userLanguageSupport;
-        });
-      }
-      // For ESL only and free plans, use the original filtered results
-
-      // Apply progression limits ONLY to non-sample lessons
-      const sampleLessons = filteredLessons.filter(lesson => lesson.week_number === 999);
-      const regularLessons = filteredLessons.filter(lesson => lesson.week_number !== 999);
-      
-      // Sort regular lessons and apply progression limit
-      const limitedRegularLessons = regularLessons
-        .sort((a, b) => a.week_number - b.week_number)
-        .slice(0, progression.available_lessons);
-
-      // Combine samples + limited regular lessons
-      const finalLessons = [...sampleLessons, ...limitedRegularLessons]
-        .sort((a, b) => a.week_number - b.week_number);
-
-      console.log('🔍 Final lesson filtering debug:', {
-        userProfile: {
-          subscription_tier: profile?.subscription_tier,
-          language_support: profile?.language_support,
-          preferred_level: profile?.preferred_level
-        },
-        access: access,
-        rawLessonsCount: (allLessons || []).length,
-        filteredLessonsCount: filteredLessons.length,
-        sampleLessonsCount: sampleLessons.length,
-        regularLessonsCount: regularLessons.length,
-        limitedRegularLessonsCount: limitedRegularLessons.length,
-        finalLessonsCount: finalLessons.length,
-        progressionLimit: progression.available_lessons,
-        samplePreview: sampleLessons.slice(0, 3).map(l => ({
-          title: l.title,
-          content_type: l.content_type,
-          language_support: l.language_support,
-          level: l.level,
-          week_number: l.week_number
-        }))
-      });
-
-      setLessons(finalLessons);
-    } catch (err: any) {
-      console.error('Lessons loading error:', err);
-    }
-  };
-
-  const loadProgress = async (userId: string) => {
+const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData, userProfile: UserProfile | null) => {
+  if (!userProfile) {
+    console.log('⏳ Profile not provided, skipping lesson filtering');
+    return;
+  }
+  
+  try {
+    console.log('🔍 Dashboard filtering inputs:', {
+      profile: userProfile?.preferred_level,
+      access: access,
+      progression: progression?.available_lessons
+    });
+    
+    const allLessons = await loadAllLessons(false, userProfile);
+    console.log('🔍 Dashboard all lessons loaded:', allLessons.length);
+    
+    const filteredLessons = filterLessonsForUser(
+      allLessons,
+      userProfile,
+      access,
+      progression,
+      false,
+      {}
+    );
+    
+    console.log('🔍 Dashboard filtered lessons:', filteredLessons.length);
+    setLessons(filteredLessons); // ← This should be inside the try block
+  } catch (err: any) {
+    console.error('Lessons loading error:', err);
+  }
+};
+    
+    const loadProgress = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('user_progress')
@@ -858,7 +789,8 @@ export default function Dashboard() {
       case 'clil_plus':
         return { text: 'CLIL + Language Support', color: 'purple' };
       case 'complete_plan':
-        return { text: 'Complete', color: 'green' };
+  const languageDisplay = profile?.language_support || 'English';
+  return { text: `Complete (${languageDisplay})`, color: 'green' };
       default:
         return { text: 'Free', color: 'gray' };
     }
@@ -900,6 +832,10 @@ const ContinueLearningSection = () => {
   if (!lessons.length || !progressionData) return null;
 
   // Count available lessons (not completed)
+  console.log('🔍 ContinueLearningSection lessons:', {
+  totalLessons: lessons.length,
+  lessonLevels: lessons.map(l => ({ title: l.title.substring(0, 20), level: l.level, week: l.week_number }))
+});
   const availableLessons = lessons.filter((lesson, index) => {
     const isAvailable = lesson.week_number === 999 || index < progressionData.available_lessons;
     const lessonProgress = progress.find(p => p.lesson_id === lesson.id);
@@ -1485,7 +1421,13 @@ const ContinueLearningSection = () => {
                         {profile?.subscription_status}
                       </span>
                     </div>
-                    
+                      {/* ADD THE LANGUAGE SUPPORT NOTE HERE */}
+      {profile?.subscription_tier === 'complete_plan' && (
+        <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+          CLIL language support: {profile?.language_support || 'English'}.
+          To change language support, please contact admin.
+        </div>
+      )}
                     <div className="pt-3 space-y-2">
                       <button 
                         onClick={() => router.push('/subscribe?upgrade=true')}

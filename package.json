@@ -8,7 +8,8 @@
   "start": "next start",
   "lint": "next lint",
   "auto-release": "node scripts/auto-release.js",
-  "release-check": "node scripts/auto-release.js"
+  "release-check": "node scripts/auto-release.js",
+  "extract-vocabulary-standalone": "npx tsx src/scripts/extract-vocabulary-standalone.ts"
 },
   "dependencies": {
     "@stripe/stripe-js": "^7.7.0",
@@ -28,6 +29,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

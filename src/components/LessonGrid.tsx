@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getCurrentUser, getUserProfile, getContentAccess } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
+import { filterLessonsForUser, loadAllLessons, logFilteringDebug } from '@/lib/lessonFiltering';
+
 
 interface Lesson {
   id: string;
@@ -141,129 +143,33 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
   };
 
   const fetchLessons = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
+    
+    const allLessons = await loadAllLessons(admin, profile);
+    
+    if (!admin && contentAccess && progressionData) {
+      const filteredLessons = filterLessonsForUser(
+        allLessons,
+        profile,
+        contentAccess,
+        progressionData,
+        admin,
+        filter
+      );
       
-      let query = supabase
-        .from('lessons')
-        .select('*')
-        .eq(admin ? 'published' : 'is_published', true)
-        .order('week_number', { ascending: true });
-
-      // Execute the initial query (get all published lessons)
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching lessons:', error);
-        setLessons([]);
-        return;
-      }
-
-      let filteredLessons = data || [];
-
-      if (!admin && contentAccess && progressionData) {
-        // STEP 1: Apply subscription-based filtering (same logic as dashboard)
-        if (!contentAccess.canAccessESL && !contentAccess.canAccessCLIL) {
-          // Free plan - show ALL samples (999 week_number) regardless of content type/level
-          filteredLessons = filteredLessons.filter(lesson => lesson.week_number === 999);
-        } else {
-          // Paid users - filter by subscription + separate samples from regular lessons
-          const sampleLessons = filteredLessons.filter(lesson => lesson.week_number === 999);
-          const regularLessons = filteredLessons.filter(lesson => lesson.week_number !== 999);
-
-          // Filter regular lessons by subscription
-          let allowedRegularLessons = regularLessons;
-          if (contentAccess.canAccessESL && contentAccess.canAccessCLIL) {
-            // Complete plan - show ESL + CLIL with language filtering
-            const userLanguageSupport = profile?.language_support || 'en';
-            allowedRegularLessons = regularLessons.filter(lesson => {
-              if (lesson.content_type === 'esl') {
-                return true; // Always show ESL
-              } else if (lesson.content_type === 'clil') {
-                return lesson.language_support === userLanguageSupport; // Filter CLIL by language
-              }
-              return false;
-            });
-          } else if (contentAccess.canAccessESL) {
-            // ESL only
-            allowedRegularLessons = regularLessons.filter(l => l.content_type === 'esl');
-          } else if (contentAccess.canAccessCLIL) {
-            // CLIL Plus - filter by user's language support
-            const userLanguageSupport = profile?.language_support || 'en';
-            allowedRegularLessons = regularLessons.filter(l => 
-              l.content_type === 'clil' && l.language_support === userLanguageSupport
-            );
-          }
-
-          // Apply progression limits only to regular lessons
-          const limitedRegularLessons = allowedRegularLessons
-            .sort((a, b) => a.week_number - b.week_number)
-            .slice(0, progressionData.available_lessons);
-
-          // Combine samples + limited regular lessons
-          filteredLessons = [...sampleLessons, ...limitedRegularLessons];
-        }
-
-        // STEP 2: Apply level filtering (only for paid users, free users see all samples)
-        if ((contentAccess.canAccessESL || contentAccess.canAccessCLIL) && 
-            profile?.preferred_level && 
-            profile.preferred_level !== 'both') {
-          // Apply level filter only to regular lessons, keep all samples
-          const samples = filteredLessons.filter(l => l.week_number === 999);
-          const regular = filteredLessons.filter(l => l.week_number !== 999 && l.level === profile.preferred_level);
-          filteredLessons = [...samples, ...regular];
-        }
-      }
-
-      // STEP 3: Apply manual filters (but respect subscription limits)
-      if (filter.contentType !== 'all') {
-        filteredLessons = filteredLessons.filter(l => l.content_type === filter.contentType);
-      }
-      if (filter.level !== 'all') {
-        filteredLessons = filteredLessons.filter(l => l.level === filter.level);
-      }
-      if (filter.language !== 'all') {
-        const languageMap: { [key: string]: string } = {
-          'english': 'en',
-          'czech': 'cs', 
-          'german': 'de',
-          'french': 'fr',
-          'spanish': 'es',
-          'polish': 'pl'
-        };
-        const targetLanguage = languageMap[filter.language] || filter.language;
-        filteredLessons = filteredLessons.filter(l => l.language_support === targetLanguage);
-      }
-
-      // Sort: samples first (999), then regular lessons by week
-      filteredLessons.sort((a, b) => {
-        if (a.week_number === 999 && b.week_number !== 999) return -1;
-        if (a.week_number !== 999 && b.week_number === 999) return 1;
-        return a.week_number - b.week_number;
-      });
-
-      console.log('🔍 LessonGrid filtering debug:', {
-        userProfile: {
-          subscription_tier: profile?.subscription_tier,
-          language_support: profile?.language_support,
-          preferred_level: profile?.preferred_level
-        },
-        access: contentAccess,
-        totalLessons: (data || []).length,
-        filteredCount: filteredLessons.length,
-        samples: filteredLessons.filter(l => l.week_number === 999).length,
-        regular: filteredLessons.filter(l => l.week_number !== 999).length,
-        progressionLimit: progressionData?.available_lessons
-      });
-
+      logFilteringDebug(profile, contentAccess, allLessons, filteredLessons, progressionData, 'LessonGrid');
       setLessons(filteredLessons);
-    } catch (error) {
-      console.error('Fetch lessons error:', error);
-      setLessons([]);
-    } finally {
-      setLoading(false);
+    } else {
+      setLessons(allLessons);
     }
-  };
+  } catch (error) {
+    console.error('Fetch lessons error:', error);
+    setLessons([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getLessonStatus = (lesson: Lesson, index: number) => {
     if (admin) return { status: 'available', locked: false };
@@ -401,10 +307,10 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
               </p>
               {!admin && progressionData && (
                 <p className="text-sm text-blue-600 mt-2">
-                  {progressionData.available_lessons} available • {progressionData.lessons_needed_for_unlock > 0 
-                    ? `Complete ${progressionData.lessons_needed_for_unlock} more to unlock new content`
-                    : 'All current content unlocked!'
-                  }
+                  {progressionData.lessons_needed_for_unlock > 0 
+  ? `Complete ${progressionData.lessons_needed_for_unlock} more to unlock new content`
+  : 'All current content unlocked!'
+}
                 </p>
               )}
             </div>

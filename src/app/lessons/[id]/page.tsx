@@ -907,21 +907,17 @@ function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLa
                 </h4>
                 <div className="space-y-2">
                   <p className="text-lg text-gray-800">
-                    {parsed.englishSentence.replace('_____', 
-                      answers[index] 
-                        ? `___${answers[index]}___`
-                        : '_____'
-                    )}
-                  </p>
-                  {isMultiLanguage && parsed.translationSentence && (
-                    <p className="text-gray-600 italic">
-                      {parsed.translationSentence.replace('_____', 
-                        answers[index] 
-                          ? `___${answers[index]}___`
-                          : '_____'
-                      )}
-                    </p>
-                  )}
+  {parsed.englishSentence.replace('_____', 
+    answers[index] 
+      ? `___${answers[index]}___`
+      : '_____'
+  )}
+</p>
+{isMultiLanguage && parsed.translationSentence && (
+  <p className="text-gray-600 italic">
+    {parsed.translationSentence}
+  </p>
+)}
                 </div>
               </div>
 
