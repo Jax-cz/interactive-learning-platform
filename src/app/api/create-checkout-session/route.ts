@@ -5,15 +5,22 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    const { priceId, planId, userId } = await request.json();
+    const { priceId, userId, userPreferences } = await request.json();
 
     // Validate required parameters
-    if (!priceId || !planId || !userId) {
+    if (!priceId || !userId) {
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Missing required parameters: priceId and userId are required' },
         { status: 400 }
       );
     }
+
+    // Extract user preferences (optional but recommended)
+    const {
+      level = 'beginner',
+      language_support = 'English',
+      subscription_tier = 'free'
+    } = userPreferences || {};
 
     // Get user details from database
     const { data: user, error: userError } = await supabase
@@ -37,6 +44,9 @@ export async function POST(request: NextRequest) {
         email: user.email,
         metadata: {
           userId: userId,
+          level: level,
+          language_support: language_support,
+          subscription_tier: subscription_tier
         },
       });
 
@@ -64,17 +74,39 @@ export async function POST(request: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/subscribe?canceled=true`,
       metadata: {
         userId: userId,
-        planId: planId,
+        level: level,
+        language_support: language_support,
+        subscription_tier: subscription_tier,
+        priceId: priceId
       },
       subscription_data: {
         metadata: {
           userId: userId,
-          planId: planId,
+          level: level,
+          language_support: language_support,
+          subscription_tier: subscription_tier,
+          priceId: priceId
         },
       },
       allow_promotion_codes: true,
       billing_address_collection: 'required',
     });
+
+    // Optionally update user preferences in database immediately
+    // (This will also be done via webhook, but doing it here provides immediate feedback)
+    try {
+      await supabase
+        .from('users')
+        .update({
+          level_preference: level,
+          language_support: language_support,
+          subscription_tier: subscription_tier
+        })
+        .eq('id', userId);
+    } catch (updateError) {
+      // Don't fail the checkout if user update fails - webhook will handle it
+      console.warn('Could not update user preferences immediately:', updateError);
+    }
 
     return NextResponse.json({ url: session.url });
 

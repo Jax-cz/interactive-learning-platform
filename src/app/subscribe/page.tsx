@@ -72,6 +72,8 @@ export default function SubscribePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [processingCheckout, setProcessingCheckout] = useState(false);
   const router = useRouter();
 
@@ -91,41 +93,83 @@ export default function SubscribePage() {
     setLoading(false);
   };
 
-  const handlePlanSelection = async (planId: string) => {
-    if (processingCheckout) return;
-    
+  const handlePlanSelection = (planId: string) => {
     setSelectedPlan(planId);
+    // Reset level and language when plan changes
+    setSelectedLevel(null);
+    setSelectedLanguage(null);
+  };
+
+  // Helper functions for plan information
+  const getPlanName = (priceId: string) => {
+    if (priceId.includes('esl') || priceId === 'price_1RvfVX1Bs1c9VoEosolWxJlo') return 'ESL Plan';
+    if (priceId.includes('clil') || priceId === 'price_1RvfWo1Bs1c9VoEowauWnLQb') return 'CLIL Plus';
+    if (priceId.includes('complete') || priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return 'Complete Plan';
+    return 'Plan';
+  };
+
+  const getPlanPrice = (priceId: string) => {
+    if (priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return '9'; // Complete Plan
+    return '6'; // ESL and CLIL Plus
+  };
+
+  const getPlanTier = (priceId: string) => {
+    if (priceId === 'price_1RvfVX1Bs1c9VoEosolWxJlo') return 'esl_only';
+    if (priceId === 'price_1RvfWo1Bs1c9VoEowauWnLQb') return 'clil_plus';
+    if (priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return 'complete_plan';
+    return 'free';
+  };
+
+  // Get the actual price ID based on selected plan
+  const getSelectedPriceId = () => {
+    if (selectedPlan === 'esl_only') return 'price_1RvfVX1Bs1c9VoEosolWxJlo';
+    if (selectedPlan === 'clil_plus') return 'price_1RvfWo1Bs1c9VoEowauWnLQb';
+    if (selectedPlan === 'complete_plan') return 'price_1RvfXm1Bs1c9VoEoYDZuJMog';
+    return '';
+  };
+
+  const handleSubscribe = async () => {
+    if (processingCheckout) return;
     setProcessingCheckout(true);
 
     try {
-      // Create Stripe checkout session
+      const priceId = getSelectedPriceId();
+      
+      // Map "English Only" to "English" for database storage
+      const languageForDatabase = selectedLanguage === 'English Only' ? 'English' : selectedLanguage;
+      
+      // Create Stripe checkout session with all user selections
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          priceId: SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS].priceId,
-          planId: planId,
-          userId: user.id
+          priceId: priceId,
+          userId: user.id,
+          userPreferences: {
+            level: selectedLevel,
+            language_support: languageForDatabase || 'English',
+            subscription_tier: getPlanTier(priceId)
+          }
         }),
       });
 
       const { url, error } = await response.json();
 
       if (error) {
-        throw new Error(error);
+        alert('Error creating checkout session: ' + error);
+        return;
       }
 
       if (url) {
-        // Redirect to Stripe Checkout
         window.location.href = url;
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Checkout error:', error);
       alert('Something went wrong. Please try again.');
+    } finally {
       setProcessingCheckout(false);
-      setSelectedPlan(null);
     }
   };
 
@@ -178,7 +222,9 @@ export default function SubscribePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           
           {/* ESL Plan */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 relative hover:shadow-xl transition-shadow">
+          <div className={`bg-white rounded-2xl shadow-lg border-2 p-8 relative hover:shadow-xl transition-all ${
+            selectedPlan === 'esl_only' ? 'border-orange-500 ring-2 ring-orange-200' : 'border-gray-200'
+          }`}>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-6">
                 <span className="text-2xl">📰</span>
@@ -206,26 +252,21 @@ export default function SubscribePage() {
 
               <button
                 onClick={() => handlePlanSelection('esl_only')}
-                disabled={processingCheckout}
-                className="w-full bg-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full px-6 py-3 rounded-lg font-semibold transition-colors ${
+                  selectedPlan === 'esl_only' 
+                    ? 'bg-orange-700 text-white' 
+                    : 'bg-orange-600 text-white hover:bg-orange-700'
+                }`}
               >
-                {selectedPlan === 'esl_only' && processingCheckout ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : (
-                  'Choose ESL Plan'
-                )}
+                {selectedPlan === 'esl_only' ? 'Selected ✓' : 'Choose ESL Plan'}
               </button>
             </div>
           </div>
 
           {/* CLIL + Language Support Plan */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 relative hover:shadow-xl transition-shadow">
+          <div className={`bg-white rounded-2xl shadow-lg border-2 p-8 relative hover:shadow-xl transition-all ${
+            selectedPlan === 'clil_plus' ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200'
+          }`}>
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <span className="bg-purple-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                 POPULAR
@@ -259,26 +300,21 @@ export default function SubscribePage() {
 
               <button
                 onClick={() => handlePlanSelection('clil_plus')}
-                disabled={processingCheckout}
-                className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full px-6 py-3 rounded-lg font-semibold transition-colors ${
+                  selectedPlan === 'clil_plus' 
+                    ? 'bg-purple-700 text-white' 
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
               >
-                {selectedPlan === 'clil_plus' && processingCheckout ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </span>
-                ) : (
-                  'Choose CLIL Plus'
-                )}
+                {selectedPlan === 'clil_plus' ? 'Selected ✓' : 'Choose CLIL Plus'}
               </button>
             </div>
           </div>
 
           {/* Complete Plan */}
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-blue-300 p-8 relative hover:shadow-2xl transition-shadow">
+          <div className={`bg-white rounded-2xl shadow-xl border-2 p-8 relative hover:shadow-2xl transition-all ${
+            selectedPlan === 'complete_plan' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-blue-300'
+          }`}>
             {/* Best Value Badge */}
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
@@ -319,10 +355,103 @@ export default function SubscribePage() {
 
               <button
                 onClick={() => handlePlanSelection('complete_plan')}
-                disabled={processingCheckout}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full px-6 py-3 rounded-lg font-semibold transition-colors ${
+                  selectedPlan === 'complete_plan' 
+                    ? 'bg-blue-700 text-white' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                {selectedPlan === 'complete_plan' && processingCheckout ? (
+                {selectedPlan === 'complete_plan' ? 'Selected ✓' : 'Choose Complete Plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Level Selection - appears after plan selection (FIXED STYLING) */}
+        {selectedPlan && (
+          <div className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              What's your English level?
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => setSelectedLevel('beginner')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedLevel === 'beginner'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <div className="text-left">
+                  <h4 className="font-semibold text-gray-900">Beginner-Lower Intermediate</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Basic English skills, simple conversations
+                  </p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => setSelectedLevel('intermediate')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedLevel === 'intermediate'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <div className="text-left">
+                  <h4 className="font-semibold text-gray-900">Intermediate-Upper Intermediate</h4>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Good English skills, complex topics
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Language Selection - appears for CLIL Plus and Complete plans */}
+        {selectedPlan && selectedLevel && (selectedPlan.includes('clil') || selectedPlan.includes('complete')) && (
+          <div className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Choose your CLIL language support:
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {['English Only', 'Czech', 'German', 'French', 'Spanish', 'Polish'].map((language) => (
+                <button
+                  key={language}
+                  onClick={() => setSelectedLanguage(language)}
+                  className={`p-3 rounded-lg border-2 transition-all ${
+                    selectedLanguage === language
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  <div className="text-center">
+                    <span className="font-medium">{language}</span>
+                    {language === 'English Only' && (
+                      <p className="text-xs text-gray-500 mt-1">No translation support</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Subscribe Button - appears when all required selections made */}
+        {selectedPlan && selectedLevel && (
+          // For ESL: only need plan + level
+          (selectedPlan.includes('esl') || 
+           // For CLIL/Complete: need plan + level + language
+           ((selectedPlan.includes('clil') || selectedPlan.includes('complete')) && selectedLanguage)
+          ) && (
+            <div className="mt-8 max-w-4xl mx-auto text-center">
+              <button
+                onClick={handleSubscribe}
+                disabled={processingCheckout}
+                className="bg-blue-600 text-white px-8 py-4 rounded-lg text-xl font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {processingCheckout ? (
                   <span className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -331,19 +460,18 @@ export default function SubscribePage() {
                     Processing...
                   </span>
                 ) : (
-                  'Choose Complete Plan'
+                  `Subscribe to ${getPlanName(getSelectedPriceId())} - $${getPlanPrice(getSelectedPriceId())}/month`
                 )}
               </button>
             </div>
-          </div>
-
-        </div>
+          )
+        )}
 
         {/* FAQ Section - Updated for 3 options */}
         <div className="mt-16 bg-white rounded-2xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
+            <div>
               <h3 className="font-semibold text-gray-900 mb-2">What's the difference between ESL and CLIL?</h3>
               <p className="text-gray-600">ESL focuses on English through interesting news articles (mainly for adults), while CLIL teaches science subjects in English (suitable for adults and teenagers).</p>
             </div>
@@ -359,7 +487,7 @@ export default function SubscribePage() {
               <h3 className="font-semibold text-gray-900 mb-2">Can I switch between difficulty levels?</h3>
               <p className="text-gray-600">Yes! You can change between beginner and intermediate levels every week to match your learning progress.</p>
             </div>
-                      </div>
+          </div>
         </div>
 
         {/* Security Notice */}
