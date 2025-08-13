@@ -912,11 +912,12 @@ const ContinueLearningSection = () => {
           </div>
         </div>
         <button
-          onClick={() => router.push('/lessons')}
-          className="px-8 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
-        >
-          Choose Lesson →
-        </button>
+  onClick={() => router.push('/lessons')}
+  className="px-4 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm sm:text-lg transition-colors shadow-lg hover:shadow-xl whitespace-nowrap"
+>
+  <span className="hidden sm:inline">Choose Lesson →</span>
+  <span className="sm:hidden">Choose →</span>
+</button>
       </div>
     </div>
   );

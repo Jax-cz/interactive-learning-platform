@@ -1,7 +1,6 @@
-// src/app/api/create-billing-portal/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe-server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's Stripe customer ID
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('stripe_customer_id')
       .eq('id', userId)
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (userError || !user || !user.stripe_customer_id) {
       return NextResponse.json(
-        { error: 'User not found or no active subscription' },
+        { error: 'No active subscription found' },
         { status: 404 }
       );
     }
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Create billing portal session
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard`,
+      return_url: `${process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')}/billing`,
     });
 
     return NextResponse.json({ url: session.url });
