@@ -1,7 +1,6 @@
-// src/app/api/cancel-subscription/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe-server';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,34 +13,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's subscription info
-    const { data: subscription, error: subError } = await supabase
-      .from('subscriptions')
+    // Get user's subscription ID
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
       .select('stripe_subscription_id')
-      .eq('user_id', userId)
-      .eq('status', 'active')
+      .eq('id', userId)
       .single();
 
-    if (subError || !subscription) {
+    if (userError || !user || !user.stripe_subscription_id) {
       return NextResponse.json(
         { error: 'No active subscription found' },
         { status: 404 }
       );
     }
 
-    // Cancel subscription at period end in Stripe
-    await stripe.subscriptions.update(subscription.stripe_subscription_id, {
-      cancel_at_period_end: true,
-    });
-
-    // Update our database
-    await supabase
-      .from('subscriptions')
-      .update({
+    // Cancel the subscription at period end
+    const subscription = await stripe.subscriptions.update(
+      user.stripe_subscription_id,
+      {
         cancel_at_period_end: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq('stripe_subscription_id', subscription.stripe_subscription_id);
+      }
+    );
 
     return NextResponse.json({ success: true });
 
