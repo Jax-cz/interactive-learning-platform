@@ -1436,12 +1436,12 @@ const ContinueLearningSection = () => {
                         Change Plan
                       </button>
                       
-                      <button 
-                        onClick={handleBillingPortal}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-                      >
-                        Manage Billing
-                      </button>
+                      <Link 
+  href="/billing"
+  className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
+>
+  Manage Billing
+</Link>
                     </div>
                   </div>
                 </div>
@@ -1461,13 +1461,13 @@ const ContinueLearningSection = () => {
                   </Link>
                   
                   {profile?.subscription_tier !== 'free' && (
-                    <button 
-                      onClick={handleBillingPortal}
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      <span>Billing & Account</span>
-                    </button>
+  <Link 
+    href="/billing"
+    className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
+  >
+    <CreditCard className="h-4 w-4" />
+    <span>Billing & Account</span>
+  </Link>
                   )}
                   
                   <Link 

@@ -98,6 +98,21 @@ export default function SubscribePage() {
     // Reset level and language when plan changes
     setSelectedLevel(null);
     setSelectedLanguage(null);
+    
+    // Auto-scroll to level selection after a brief delay
+    setTimeout(() => {
+      const levelSection = document.getElementById('level-selection');
+      if (levelSection) {
+        const headerOffset = 100; // Offset to account for header
+        const elementPosition = levelSection.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 150);
   };
 
   // Helper functions for plan information
@@ -367,15 +382,48 @@ export default function SubscribePage() {
           </div>
         </div>
 
-        {/* Level Selection - appears after plan selection (FIXED STYLING) */}
+        {/* Level Selection - appears after plan selection (FIXED STYLING + AUTO-SCROLL) */}
         {selectedPlan && (
-          <div className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+          <div id="level-selection" className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               What's your English level?
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <button
-                onClick={() => setSelectedLevel('beginner')}
+                onClick={() => {
+                  setSelectedLevel('beginner');
+                  // Auto-scroll to language selection for CLIL plans
+                  if (selectedPlan.includes('clil') || selectedPlan.includes('complete')) {
+                    setTimeout(() => {
+                      const languageSection = document.getElementById('language-selection');
+                      if (languageSection) {
+                        const headerOffset = 100;
+                        const elementPosition = languageSection.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }, 150);
+                  } else {
+                    // For ESL, scroll to subscribe button
+                    setTimeout(() => {
+                      const subscribeSection = document.getElementById('subscribe-section');
+                      if (subscribeSection) {
+                        const headerOffset = 100;
+                        const elementPosition = subscribeSection.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        
+                        window.scrollTo({
+                          top: offsetPosition,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }, 150);
+                  }
+                }}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   selectedLevel === 'beginner'
                     ? 'border-blue-500 bg-blue-50'
@@ -391,7 +439,34 @@ export default function SubscribePage() {
               </button>
               
               <button
-                onClick={() => setSelectedLevel('intermediate')}
+                onClick={() => {
+                  setSelectedLevel('intermediate');
+                  // Auto-scroll to language selection for CLIL plans
+                  if (selectedPlan.includes('clil') || selectedPlan.includes('complete')) {
+                    setTimeout(() => {
+                      const languageSection = document.getElementById('language-selection');
+                      if (languageSection) {
+                        languageSection.scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'start',
+                          inline: 'nearest'
+                        });
+                      }
+                    }, 100);
+                  } else {
+                    // For ESL, scroll to subscribe button
+                    setTimeout(() => {
+                      const subscribeSection = document.getElementById('subscribe-section');
+                      if (subscribeSection) {
+                        subscribeSection.scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'start',
+                          inline: 'nearest'
+                        });
+                      }
+                    }, 100);
+                  }
+                }}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   selectedLevel === 'intermediate'
                     ? 'border-blue-500 bg-blue-50'
@@ -411,7 +486,7 @@ export default function SubscribePage() {
 
         {/* Language Selection - appears for CLIL Plus and Complete plans */}
         {selectedPlan && selectedLevel && (selectedPlan.includes('clil') || selectedPlan.includes('complete')) && (
-          <div className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+          <div id="language-selection" className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               Choose your CLIL language support:
             </h3>
@@ -419,7 +494,20 @@ export default function SubscribePage() {
               {['English Only', 'Czech', 'German', 'French', 'Spanish', 'Polish'].map((language) => (
                 <button
                   key={language}
-                  onClick={() => setSelectedLanguage(language)}
+                  onClick={() => {
+                    setSelectedLanguage(language);
+                    // Auto-scroll to subscribe button after language selection
+                    setTimeout(() => {
+                      const subscribeSection = document.getElementById('subscribe-section');
+                      if (subscribeSection) {
+                        subscribeSection.scrollIntoView({ 
+                          behavior: 'smooth', 
+                          block: 'start',
+                          inline: 'nearest'
+                        });
+                      }
+                    }, 100);
+                  }}
                   className={`p-3 rounded-lg border-2 transition-all ${
                     selectedLanguage === language
                       ? 'border-blue-500 bg-blue-50'
@@ -445,7 +533,7 @@ export default function SubscribePage() {
            // For CLIL/Complete: need plan + level + language
            ((selectedPlan.includes('clil') || selectedPlan.includes('complete')) && selectedLanguage)
           ) && (
-            <div className="mt-8 max-w-4xl mx-auto text-center">
+            <div id="subscribe-section" className="mt-8 max-w-4xl mx-auto text-center">
               <button
                 onClick={handleSubscribe}
                 disabled={processingCheckout}
@@ -460,7 +548,7 @@ export default function SubscribePage() {
                     Processing...
                   </span>
                 ) : (
-                  `Subscribe to ${getPlanName(getSelectedPriceId())} - $${getPlanPrice(getSelectedPriceId())}/month`
+                  `Subscribe to ${getPlanName(getSelectedPriceId())} - ${getPlanPrice(getSelectedPriceId())}/month`
                 )}
               </button>
             </div>

@@ -1439,7 +1439,25 @@ export default function LessonPage() {
     { id: 8, name: 'Summary', type: 'summary' }
   ];
 
-  const isLastExerciseBeforeSummary = (currentIndex: number) => {
+  // Auto-scroll to lesson content when changing exercises
+const scrollToLessonContent = () => {
+  // Small delay to ensure content has rendered
+  setTimeout(() => {
+    const lessonContentElement = document.querySelector('.lg\\:col-span-3 .bg-white');
+    if (lessonContentElement) {
+      const headerOffset = 100; // Account for header height
+      const elementPosition = lessonContentElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  }, 100);
+};
+
+const isLastExerciseBeforeSummary = (currentIndex: number) => {
     const nextExercise = exercises[currentIndex + 1];
     return nextExercise?.type === 'summary';
   };
@@ -1633,7 +1651,10 @@ if (!lesson) {
                 {exercises.map((exercise, index) => (
                   <button
                     key={exercise.id}
-                    onClick={() => setCurrentExercise(index)}
+                    onClick={() => {
+  setCurrentExercise(index);
+  scrollToLessonContent();
+}}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                       currentExercise === index
                         ? 'bg-blue-100 text-blue-800 font-medium'
@@ -1696,9 +1717,10 @@ if (!lesson) {
                     questions={lesson.content_data.warmerQuestions}
                     isMultiLanguage={isMultiLanguage}
                     onComplete={() => {
-                      markExerciseComplete(currentExercise);
-                      setCurrentExercise(1);
-                    }}
+  markExerciseComplete(currentExercise);
+  setCurrentExercise(1);
+  scrollToLessonContent();
+}}
                   />
                 )}
 
@@ -1707,9 +1729,10 @@ if (!lesson) {
                     vocabulary={lesson.content_data.vocabularyPreview}
                     isMultiLanguage={isMultiLanguage}
                     onComplete={() => {
-                      markExerciseComplete(currentExercise);
-                      setCurrentExercise(2);
-                    }}
+  markExerciseComplete(currentExercise);
+  setCurrentExercise(2);
+  scrollToLessonContent();
+}}
                   />
                 )}
 
@@ -1719,9 +1742,10 @@ if (!lesson) {
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={shouldShowTranslations}
                     onComplete={() => {
-                      markExerciseComplete(currentExercise);
-                      setCurrentExercise(3);
-                    }}
+  markExerciseComplete(currentExercise);
+  setCurrentExercise(3);
+  scrollToLessonContent();
+}}
                   />
                 )}
 
@@ -1734,6 +1758,7 @@ if (!lesson) {
                         onComplete={() => {
                           markExerciseComplete(currentExercise);
                           setCurrentExercise(currentExercise + 1);
+                          scrollToLessonContent();
                         }}
                       />
                     ) : (
@@ -1742,6 +1767,7 @@ if (!lesson) {
                         onComplete={() => {
                           markExerciseComplete(currentExercise);
                           setCurrentExercise(currentExercise + 1);
+                          scrollToLessonContent();
                         }}
                       />
                     )}
@@ -1755,6 +1781,7 @@ if (!lesson) {
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
+                      scrollToLessonContent();
                     }}
                   />
                 )}
@@ -1766,6 +1793,7 @@ if (!lesson) {
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
+                      scrollToLessonContent();
                     }}
                   />
                 )}
@@ -1779,6 +1807,7 @@ if (!lesson) {
     onComplete={() => {
       markExerciseComplete(currentExercise);
       setCurrentExercise(currentExercise + 1);
+      scrollToLessonContent();
     }}
   />
 )}
@@ -1791,6 +1820,7 @@ if (!lesson) {
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
+                      scrollToLessonContent();
                     }}
                   />
                 )}
@@ -1850,7 +1880,10 @@ if (!lesson) {
                 {/* Exercise Navigation */}
                 <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
                   <button
-                    onClick={() => setCurrentExercise(Math.max(0, currentExercise - 1))}
+                    onClick={() => {
+  setCurrentExercise(Math.max(0, currentExercise - 1));
+  scrollToLessonContent();
+}}
                     disabled={currentExercise === 0}
                     className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -1860,7 +1893,10 @@ if (!lesson) {
                     {currentExercise + 1} of {exercises.length}
                   </span>
                   <button
-                    onClick={() => setCurrentExercise(Math.min(exercises.length - 1, currentExercise + 1))}
+                    onClick={() => {
+  setCurrentExercise(Math.min(exercises.length - 1, currentExercise + 1));
+  scrollToLessonContent();
+}}
                     disabled={currentExercise === exercises.length - 1}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
