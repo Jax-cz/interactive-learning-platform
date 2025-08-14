@@ -1648,12 +1648,12 @@ if (!lesson) {
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Progress</div>
-              <div className="text-lg font-semibold text-blue-600">
-                {getCompletedCount()}/{exercises.length}
-              </div>
-            </div>
+            <div className="hidden sm:block text-right">
+  <div className="text-sm text-gray-600">Progress</div>
+  <div className="text-lg font-semibold text-blue-600">
+    {getCompletedCount()}/{exercises.length}
+  </div>
+</div>
           </div>
 
           {/* Progress Bar */}
