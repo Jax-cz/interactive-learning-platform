@@ -26,7 +26,7 @@ import {
   CreditCard,
   Bell
 } from 'lucide-react';
-import { filterLessonsForUser, loadAllLessons } from '../../lib/lessonFiltering';
+import { loadLessonsForUser } from '../../lib/lessonFiltering';
 
 
 export type Lesson = {
@@ -622,34 +622,31 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
   };
 
 const loadLessonsWithProgression = async (userId: string, access: any, progression: ProgressionData, userProfile: UserProfile | null) => {
-  if (!userProfile) {
-    console.log('⏳ Profile not provided, skipping lesson filtering');
+  if (!userProfile || !access || !progression) {
+    console.log('⏳ Dependencies not ready, skipping lesson loading');
     return;
   }
   
   try {
-    console.log('🔍 Dashboard filtering inputs:', {
+    console.log('🔍 Dashboard loading lessons:', {
       profile: userProfile?.preferred_level,
       access: access,
       progression: progression?.available_lessons
     });
     
-    const allLessons = await loadAllLessons(false, userProfile);
-    console.log('🔍 Dashboard all lessons loaded:', allLessons.length);
-    
-    const filteredLessons = filterLessonsForUser(
-      allLessons,
+    // Load pre-filtered lessons directly from database
+    const lessons = await loadLessonsForUser(
       userProfile,
       access,
       progression,
-      false,
-      {}
+      false
     );
     
-    console.log('🔍 Dashboard filtered lessons:', filteredLessons.length);
-    setLessons(filteredLessons); // ← This should be inside the try block
+    console.log('🔍 Dashboard loaded lessons:', lessons.length);
+    setLessons(lessons);
   } catch (err: any) {
     console.error('Lessons loading error:', err);
+    setLessons([]);
   }
 };
     
@@ -779,22 +776,27 @@ const loadLessonsWithProgression = async (userId: string, access: any, progressi
   };
 
   const getSubscriptionBadge = () => {
-    if (!profile) return { text: 'Loading...', color: 'gray' };
-    
-    switch (profile.subscription_tier) {
-      case 'free':
-        return { text: 'Free', color: 'gray' };
-      case 'esl_only':
-        return { text: 'ESL', color: 'orange' };
-      case 'clil_plus':
-        return { text: 'CLIL + Language Support', color: 'purple' };
-      case 'complete_plan':
-  const languageDisplay = profile?.language_support || 'English';
-  return { text: `Complete (${languageDisplay})`, color: 'green' };
-      default:
-        return { text: 'Free', color: 'gray' };
-    }
-  };
+  if (!profile) return { text: 'Loading...', color: 'gray' };
+  
+  switch (profile.subscription_tier) {
+    case 'free':
+      return { text: 'Free', color: 'gray' };
+    case 'esl_only':
+      return { text: 'ESL', color: 'orange' };
+    case 'clil_plus':
+      const clilLanguage = profile?.language_support || 'English';
+      // Show just "CLIL" for English, "CLIL (Language)" for others
+      return { 
+        text: clilLanguage === 'English' ? 'CLIL' : `CLIL (${clilLanguage})`, 
+        color: 'purple' 
+      };
+    case 'complete_plan':
+      const languageDisplay = profile?.language_support || 'English';
+      return { text: `Complete (${languageDisplay})`, color: 'green' };
+    default:
+      return { text: 'Free', color: 'gray' };
+  }
+};
 
   const getLessonStatus = (lesson: Lesson, index: number) => {
     const lessonProgress = getProgressForLesson(lesson.id);
@@ -880,28 +882,35 @@ const ContinueLearningSection = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold text-blue-900 mb-1">Continue Learning</h2>
-            <p className="text-blue-700 font-medium mb-2">
-              {availableLessons.length} lesson{availableLessons.length > 1 ? 's' : ''} available
-            </p>
-            
-            {/* Show breakdown of available content */}
-            <div className="flex items-center space-x-4 text-sm">
-              {samples.length > 0 && (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full font-medium">
-                  {samples.length} Sample{samples.length > 1 ? 's' : ''}
-                </span>
-              )}
-              {eslLessons.length > 0 && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
-                  {eslLessons.length} ESL
-                </span>
-              )}
-              {clilLessons.length > 0 && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
-                  {clilLessons.length} CLIL
-                </span>
-              )}
-            </div>
+           {(() => {
+  // Separate counts: regular lessons (weeks 1-998) vs samples (week 999)
+  const regularLessons = availableLessons.filter(l => l.week_number !== 999);
+  const samples = availableLessons.filter(l => l.week_number === 999);
+  const regularESL = regularLessons.filter(l => l.content_type === 'esl');
+  const regularCLIL = regularLessons.filter(l => l.content_type === 'clil');
+  
+  return (
+    <>
+      <p className="text-blue-700 font-medium mb-2">
+  {regularLessons.length} lesson{regularLessons.length > 1 ? 's' : ''} available
+</p>
+      
+      {/* Show breakdown: ESL first, then CLIL, then Samples last */}
+      <div className="flex items-center space-x-4 text-sm">
+  {regularESL.length > 0 && (
+    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+      {regularESL.length} ESL
+    </span>
+  )}
+  {regularCLIL.length > 0 && (
+    <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
+      {regularCLIL.length} CLIL
+    </span>
+  )}
+</div>
+    </>
+  );
+})()}
             
             {/* Anti-binge protection info */}
             {progressionData.lessons_needed_for_unlock > 0 && (

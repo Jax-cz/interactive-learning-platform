@@ -35,14 +35,21 @@ export const calculateProgressionData = async (
 ): Promise<ProgressionData> => {
   try {
     const { data: completedLessons, error: progressError } = await supabase
-      .from('user_progress')
-      .select('lesson_id, is_completed')
-      .eq('user_id', userId)
-      .eq('is_completed', true);
+  .from('user_progress')
+  .select(`
+    lesson_id, 
+    is_completed,
+    lessons!inner(week_number)
+  `)
+  .eq('user_id', userId)
+  .eq('is_completed', true);
 
-    if (progressError) throw progressError;
+if (progressError) throw progressError;
 
-    const totalCompleted = completedLessons?.length || 0;
+// Only count regular lessons (weeks 1-998) for progression, NOT samples (week 999)
+const totalCompleted = completedLessons?.filter((progress: any) => 
+  progress.lessons?.week_number !== 999
+).length || 0;
     const joinDate = new Date(userProfile?.created_at || new Date());
     const currentDate = new Date();
     const weeksSinceJoin = Math.floor((currentDate.getTime() - joinDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
@@ -100,29 +107,101 @@ export const calculateProgressionData = async (
 };
 
 /**
- * Load all published lessons from database with basic query filters
+ * Load lessons filtered at database level for specific user
  */
-export const loadAllLessons = async (
-  admin: boolean = false,
-  userProfile: UserProfile | null = null
+export const loadLessonsForUser = async (
+  userProfile: UserProfile | null,
+  contentAccess: ContentAccess,
+  progressionData: ProgressionData,
+  admin: boolean = false
 ): Promise<Lesson[]> => {
   try {
+    // ADMIN: Get everything
+    if (admin) {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('is_published', true)
+        .order('week_number', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    // FREE USERS: Only samples
+    if (!contentAccess.canAccessESL && !contentAccess.canAccessCLIL) {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('is_published', true)
+        .eq('week_number', 999) // Only samples
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    }
+
+    // PAID USERS: Build dynamic query
     let query = supabase
       .from('lessons')
       .select('*')
-      .eq(admin ? 'published' : 'is_published', true)
-      .order('week_number', { ascending: true });
+      .eq('is_published', true);
+
+    // Content type filtering
+    const contentTypes = [];
+    if (contentAccess.canAccessESL) contentTypes.push('esl');
+    if (contentAccess.canAccessCLIL) contentTypes.push('clil');
+    
+    if (contentTypes.length > 0) {
+      query = query.in('content_type', contentTypes);
+    }
+
+    // Language filtering for CLIL
+    if (contentAccess.canAccessCLIL && userProfile?.language_support) {
+      // For CLIL users, filter by their language OR ESL content
+      if (contentAccess.canAccessESL) {
+        // Complete plan: ESL (any language) + CLIL (user's language)
+        query = query.or(
+          `content_type.eq.esl,and(content_type.eq.clil,language_support.eq.${userProfile.language_support})`
+        );
+      } else {
+        // CLIL only: Just user's language
+        query = query.eq('language_support', userProfile.language_support);
+      }
+    }
+
+    // Level filtering
+    if (userProfile?.preferred_level && userProfile.preferred_level !== 'both') {
+      query = query.eq('level', userProfile.preferred_level);
+    }
+
+    // Week number filtering (samples + progression limit)
+    const maxWeek = Math.max(progressionData.current_week, 999); // Include samples
+    query = query.lte('week_number', maxWeek);
+
+    // Order: Regular lessons first (newest), then samples
+    query = query.order('week_number', { ascending: false });
 
     const { data, error } = await query;
 
-    if (error) {
-      console.error('Error fetching lessons:', error);
-      return [];
-    }
+    if (error) throw error;
 
-    return data || [];
+    let lessons = data || [];
+
+    // Apply progression limits to regular lessons only
+    const regularLessons = lessons.filter(l => l.week_number !== 999);
+    const samples = lessons.filter(l => l.week_number === 999);
+    
+    // Limit regular lessons by progression
+    const limitedRegular = regularLessons
+      .sort((a, b) => a.week_number - b.week_number) // Oldest first for progression
+      .slice(0, progressionData.available_lessons);
+
+    // Combine limited regular + all samples
+    return [...limitedRegular, ...samples];
+
   } catch (error) {
-    console.error('Error loading lessons:', error);
+    console.error('Error loading lessons for user:', error);
     return [];
   }
 };
@@ -216,39 +295,6 @@ export const filterLessonsForUser = (
 };
 
 /**
- * Apply manual filter selections (dropdowns on lessons page)
- */
-const applyManualFilters = (
-  lessons: Lesson[], 
-  filters: FilterOptions
-): Lesson[] => {
-  let filtered = [...lessons];
-
-  if (filters.contentType && filters.contentType !== 'all') {
-    filtered = filtered.filter(l => l.content_type === filters.contentType);
-  }
-
-  if (filters.level && filters.level !== 'all') {
-    filtered = filtered.filter(l => l.level === filters.level);
-  }
-
-  if (filters.language && filters.language !== 'all') {
-    const languageMap: { [key: string]: string } = {
-      'english': 'English',
-      'czech': 'Czech',
-      'german': 'German',
-      'french': 'French',
-      'spanish': 'Spanish',
-      'polish': 'Polish'
-    };
-    const targetLanguage = languageMap[filters.language] || filters.language;
-    filtered = filtered.filter(l => l.language_support === targetLanguage);
-  }
-
-  return filtered;
-};
-
-/**
  * Get available filter options based on user's subscription
  */
 export const getAvailableFilterOptions = (
@@ -322,4 +368,37 @@ export const logFilteringDebug = (
       level: l.level
     }))
   });
+};
+
+/**
+ * Apply manual filter selections (dropdowns on lessons page)
+ */
+export const applyManualFilters = (
+  lessons: Lesson[], 
+  filters: FilterOptions
+): Lesson[] => {
+  let filtered = [...lessons];
+
+  if (filters.contentType && filters.contentType !== 'all') {
+    filtered = filtered.filter(l => l.content_type === filters.contentType);
+  }
+
+  if (filters.level && filters.level !== 'all') {
+    filtered = filtered.filter(l => l.level === filters.level);
+  }
+
+  if (filters.language && filters.language !== 'all') {
+    const languageMap: { [key: string]: string } = {
+      'english': 'English',
+      'czech': 'Czech',
+      'german': 'German',
+      'french': 'French',
+      'spanish': 'Spanish',
+      'polish': 'Polish'
+    };
+    const targetLanguage = languageMap[filters.language] || filters.language;
+    filtered = filtered.filter(l => l.language_support === targetLanguage);
+  }
+
+  return filtered;
 };
