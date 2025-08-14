@@ -44,7 +44,7 @@ function MultiWarmerComponent({ questions, onComplete, isMultiLanguage }: MultiW
       </div>
       <button
         onClick={onComplete}
-        className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+        className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
       >
         Continue to Vocabulary →
       </button>
@@ -273,7 +273,7 @@ const removeMatch = (wordIndex: number) => {
         <button
           onClick={submitMatches}
           disabled={!allMatched}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
         >
           Check Matches ({Object.keys(matches).length}/{vocabPairs.length})
         </button>
@@ -412,7 +412,7 @@ function MultiReadingComponent({ readingText, onComplete, isMultiLanguage, showT
 
       <button
         onClick={onComplete}
-        className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+        className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
       >
         Continue to Questions →
       </button>
@@ -513,7 +513,7 @@ function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: Mul
         <button
           onClick={submitAnswers}
           disabled={!allAnswered}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Check Answers
         </button>
@@ -667,7 +667,7 @@ const parseInstructions = (instructions: string) => {
         </div>
         <button
           onClick={onComplete}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
         >
           Continue to Next Exercise →
         </button>
@@ -811,7 +811,7 @@ const parseInstructions = (instructions: string) => {
         <button
           onClick={submitSequence}
           disabled={!isComplete}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
         >
           Check Order ({userOrder.length}/{sequenceSteps.length})
         </button>
@@ -1006,7 +1006,7 @@ function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLa
         <button
           onClick={submitAnswers}
           disabled={!allAnswered}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
         >
           Check Answers ({Object.keys(answers).length}/{vocabularyPractice.length})
         </button>
@@ -1102,7 +1102,7 @@ function TrueFalseComponent({ questions, onComplete }: TrueFalseComponentProps) 
         <button
           onClick={submitAnswers}
           disabled={!allAnswered}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Check Answers
         </button>
@@ -1251,7 +1251,7 @@ function FindInTextComponent({ findInText, readingText, onComplete }: FindInText
         <button
           onClick={submitAnswers}
           disabled={!allAnswered}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
         >
           Check Answers ({Object.keys(answers).length}/{findInText.length})
         </button>
@@ -1396,7 +1396,7 @@ function GrammarFocusComponent({ grammarFocus, onComplete, isLastExercise = fals
         <button
           onClick={submitAnswers}
           disabled={!allAnswered}
-          className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
         >
           Check Answers ({Object.keys(answers).length}/{grammarFocus.length})
         </button>
