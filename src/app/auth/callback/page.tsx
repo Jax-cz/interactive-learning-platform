@@ -56,14 +56,14 @@ function AuthCallbackContent() {
         const type = searchParams.get('type');
         
         if (type === 'signup') {
-          // Email confirmation successful
-          setSuccess('Email confirmed successfully! You can now sign in.');
-          setLoading(false);
-          
-          // Redirect to login after a brief delay
-          setTimeout(() => {
-            router.push('/login');
-          }, 3000);
+  // Email confirmation successful - go directly to dashboard
+  setSuccess('Email confirmed! Welcome to your learning dashboard...');
+  setLoading(false);
+  
+  // Redirect to dashboard after a brief delay
+  setTimeout(() => {
+    router.push('/dashboard');
+  }, 2000);
           
         } else if (type === 'recovery') {
           // Password reset flow
