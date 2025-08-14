@@ -922,16 +922,16 @@ const ContinueLearningSection = () => {
         </div>
         <button
   onClick={() => router.push('/lessons')}
-  className="px-4 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm sm:text-lg transition-colors shadow-lg hover:shadow-xl flex items-center justify-center w-full sm:w-auto"
+  className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold transition-colors shadow-lg hover:shadow-xl w-full sm:w-auto sm:px-8 sm:py-4 text-center"
 >
-  <div className="text-center leading-tight">
-    <div className="block sm:hidden">
+  <div className="sm:hidden">
+    <div className="text-sm leading-tight">
       <div>Continue</div>
       <div>Learning →</div>
     </div>
-    <div className="hidden sm:block">
-      Continue Learning →
-    </div>
+  </div>
+  <div className="hidden sm:block text-lg">
+    Continue Learning →
   </div>
 </button>
       </div>

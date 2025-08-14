@@ -1674,7 +1674,7 @@ if (!lesson) {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Exercise Navigation Sidebar */}
+          {/* Exercise Navigation Sidebar - HIDDEN ON MOBILE */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-8">
               <h3 className="font-semibold text-gray-900 mb-4">Lesson Exercises</h3>
@@ -1683,9 +1683,9 @@ if (!lesson) {
                   <button
                     key={exercise.id}
                     onClick={() => {
-  setCurrentExercise(index);
-  scrollToLessonContent();
-}}
+                      setCurrentExercise(index);
+                      scrollToLessonContent();
+                    }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                       currentExercise === index
                         ? 'bg-blue-100 text-blue-800 font-medium'
@@ -1721,15 +1721,49 @@ if (!lesson) {
             </div>
           </div>
 
-          {/* Main Exercise Content */}
+          {/* Main Exercise Content - FULL WIDTH ON MOBILE */}
           <div className="col-span-1 lg:col-span-3">
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            {/* Mobile Exercise Navigation - COMPACT TOP BAR */}
+            <div className="lg:hidden mb-6 bg-white rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-900">
+                  {exercises[currentExercise]?.name}
+                </h3>
+                <span className="text-sm text-gray-500">
+                  {currentExercise + 1}/{exercises.length}
+                </span>
+              </div>
+              
+              {/* Mobile Progress Dots */}
+              <div className="flex items-center space-x-1 overflow-x-auto pb-2">
+                {exercises.map((exercise, index) => (
+                  <button
+                    key={exercise.id}
+                    onClick={() => {
+                      setCurrentExercise(index);
+                      scrollToLessonContent();
+                    }}
+                    className={`flex-shrink-0 w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                      currentExercise === index
+                        ? 'bg-blue-600 text-white'
+                        : exerciseProgress[index]
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {exerciseProgress[index] ? '✓' : index + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-8">
               {/* Lesson Image */}
-              <div className="mb-8">
+              <div className="mb-6 sm:mb-8">
                 <img
                   src={`/images/lessons/${lesson.image_filename || 'placeholder'}.jpg`}
                   alt={lesson.title}
-                  className="w-full h-64 object-cover rounded-lg"
+                  className="w-full h-48 sm:h-64 object-cover rounded-lg"
                   onError={(e) => {
                     e.currentTarget.src = '/images/lessons/placeholder.jpg';
                   }}
@@ -1738,7 +1772,8 @@ if (!lesson) {
 
               {/* Exercise Content */}
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                {/* Desktop Exercise Title - Hidden on Mobile since it's in top bar */}
+                <h2 className="hidden lg:block text-xl font-semibold text-gray-900 mb-6">
                   {exercises[currentExercise]?.name}
                 </h2>
 
@@ -1748,10 +1783,10 @@ if (!lesson) {
                     questions={lesson.content_data.warmerQuestions}
                     isMultiLanguage={isMultiLanguage}
                     onComplete={() => {
-  markExerciseComplete(currentExercise);
-  setCurrentExercise(1);
-  scrollToLessonContent();
-}}
+                      markExerciseComplete(currentExercise);
+                      setCurrentExercise(1);
+                      scrollToLessonContent();
+                    }}
                   />
                 )}
 
@@ -1760,10 +1795,10 @@ if (!lesson) {
                     vocabulary={lesson.content_data.vocabularyPreview}
                     isMultiLanguage={isMultiLanguage}
                     onComplete={() => {
-  markExerciseComplete(currentExercise);
-  setCurrentExercise(2);
-  scrollToLessonContent();
-}}
+                      markExerciseComplete(currentExercise);
+                      setCurrentExercise(2);
+                      scrollToLessonContent();
+                    }}
                   />
                 )}
 
@@ -1773,10 +1808,10 @@ if (!lesson) {
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={shouldShowTranslations}
                     onComplete={() => {
-  markExerciseComplete(currentExercise);
-  setCurrentExercise(3);
-  scrollToLessonContent();
-}}
+                      markExerciseComplete(currentExercise);
+                      setCurrentExercise(3);
+                      scrollToLessonContent();
+                    }}
                   />
                 )}
 
@@ -1829,19 +1864,18 @@ if (!lesson) {
                   />
                 )}
 
-               
-{exercises[currentExercise]?.type === 'sequenceProcess' && (
-  <SequenceProcessComponent
-    sequenceContent={lesson?.content_data?.sequenceProcess}          // The steps array
-    sequenceInstructions={lesson?.content_data?.sequenceInstructions} // The instructions string
-    isMultiLanguage={isMultiLanguage}
-    onComplete={() => {
-      markExerciseComplete(currentExercise);
-      setCurrentExercise(currentExercise + 1);
-      scrollToLessonContent();
-    }}
-  />
-)}
+                {exercises[currentExercise]?.type === 'sequenceProcess' && (
+                  <SequenceProcessComponent
+                    sequenceContent={lesson?.content_data?.sequenceProcess}
+                    sequenceInstructions={lesson?.content_data?.sequenceInstructions}
+                    isMultiLanguage={isMultiLanguage}
+                    onComplete={() => {
+                      markExerciseComplete(currentExercise);
+                      setCurrentExercise(currentExercise + 1);
+                      scrollToLessonContent();
+                    }}
+                  />
+                )}
 
                 {exercises[currentExercise]?.type === 'vocabularyPractice' && (
                   <VocabularyPracticeComponent
@@ -1873,50 +1907,42 @@ if (!lesson) {
                       )}
                     </div>
                     <button
-  onClick={async () => {
-    markExerciseComplete(currentExercise);
-    await saveLessonProgress();
-    
-    // Check if this is a sample lesson
-    const urlParams = new URLSearchParams(window.location.search);
-    const isSample = urlParams.get('sample') === 'true';
-    
-    if (isSample) {
-      // Sample lesson: Redirect to registration with user preferences
-      const currentUrl = new URL(window.location.href);
-      const samplesUrl = document.referrer; // Where they came from (samples page)
-      
-      // Extract parameters from samples page referrer or current URL
-      const level = urlParams.get('level') || new URLSearchParams(samplesUrl.split('?')[1] || '').get('level') || 'beginner';
-      const content = urlParams.get('content') || new URLSearchParams(samplesUrl.split('?')[1] || '').get('content') || 'esl';
-      const language = urlParams.get('language') || new URLSearchParams(samplesUrl.split('?')[1] || '').get('language') || 'English';
-      
-      window.location.href = `/register?plan=${content}&level=${level}&language=${language}`;
-    } else {
-      // Regular lesson: Redirect to dashboard
-      window.location.href = '/dashboard';
-    }
-  }}
-  className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
->
-  {/* Dynamic button text based on sample vs regular */}
-  {new URLSearchParams(window.location.search).get('sample') === 'true' 
-    ? 'Get Full Access →' 
-    : 'Complete Lesson ✓'
-  }
-</button>
+                      onClick={async () => {
+                        markExerciseComplete(currentExercise);
+                        await saveLessonProgress();
+                        
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const isSample = urlParams.get('sample') === 'true';
+                        
+                        if (isSample) {
+                          const level = urlParams.get('level') || 'beginner';
+                          const content = urlParams.get('content') || 'esl';
+                          const language = urlParams.get('language') || 'English';
+                          
+                          window.location.href = `/register?plan=${content}&level=${level}&language=${language}`;
+                        } else {
+                          window.location.href = '/dashboard';
+                        }
+                      }}
+                      className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      {new URLSearchParams(window.location.search).get('sample') === 'true' 
+                        ? 'Get Full Access →' 
+                        : 'Complete Lesson ✓'
+                      }
+                    </button>
                   </div>
                 )}
 
                 {/* Exercise Navigation */}
-                <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                <div className="flex justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
                   <button
                     onClick={() => {
-  setCurrentExercise(Math.max(0, currentExercise - 1));
-  scrollToLessonContent();
-}}
+                      setCurrentExercise(Math.max(0, currentExercise - 1));
+                      scrollToLessonContent();
+                    }}
                     disabled={currentExercise === 0}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ← Previous
                   </button>
@@ -1925,11 +1951,11 @@ if (!lesson) {
                   </span>
                   <button
                     onClick={() => {
-  setCurrentExercise(Math.min(exercises.length - 1, currentExercise + 1));
-  scrollToLessonContent();
-}}
+                      setCurrentExercise(Math.min(exercises.length - 1, currentExercise + 1));
+                      scrollToLessonContent();
+                    }}
                     disabled={currentExercise === exercises.length - 1}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>
