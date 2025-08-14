@@ -1104,52 +1104,6 @@ const ContinueLearningSection = () => {
   </div>
 )}
 
-{/* Free User Upgrade Banner - Only show for free users */}
-{profile?.subscription_tier === 'free' && (
-  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 mb-8 text-white">
-    <div className="text-center">
-      <div className="flex items-center justify-center mb-4">
-        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-          <Trophy className="w-8 h-8 text-white" />
-        </div>
-      </div>
-      
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold mb-1">Unlock Your Full Learning Potential</h2>
-          <p className="text-blue-100 mb-4">
-            You're currently exploring samples. Upgrade to access our complete learning system!
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-          <span className="flex items-center">
-            <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-            Weekly new lessons
-          </span>
-          <span className="flex items-center">
-            <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-            Progressive learning path
-          </span>
-          <span className="flex items-center">
-            <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-            Multi-language support
-          </span>
-        </div>
-        
-        <div className="pt-4">
-          <Link 
-            href="/subscribe" 
-            className="inline-block bg-white text-blue-600 px-8 py-3 rounded-xl font-bold text-lg hover:bg-blue-50 transition-colors shadow-lg"
-          >
-            Choose Your Plan →
-          </Link>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
           {/* CONTINUE LEARNING - Prominent placement */}
           <ContinueLearningSection />
 
@@ -1482,30 +1436,8 @@ const ContinueLearningSection = () => {
                 </div>
               </div>
 
-              {/* Subscription Status */}
-              {profile?.subscription_tier === 'free' ? (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-                  <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center space-x-2">
-                    <Trophy className="h-5 w-5" />
-                    <span>Unlock Full Access</span>
-                  </h3>
-                  <p className="text-blue-700 mb-4 text-sm">
-                    You're on the free plan with sample lessons only. Upgrade to access our complete learning system!
-                  </p>
-                  <div className="space-y-2 text-sm text-blue-600 mb-4">
-                    <p>• Complete lesson progression system</p>
-                    <p>• ESL News + CLIL Science content</p>
-                    <p>• Multi-language support options</p>
-                    <p>• Progress tracking & achievements</p>
-                  </div>
-                  <Link 
-                    href="/subscribe" 
-                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-                  >
-                    Choose Your Plan
-                  </Link>
-                </div>
-              ) : (
+              {/* Subscription Status - Only show for paid users */}
+              {profile?.subscription_tier !== 'free' && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
                     <Calendar className="h-5 w-5 text-blue-600" />
@@ -1530,13 +1462,14 @@ const ContinueLearningSection = () => {
                         {profile?.subscription_status}
                       </span>
                     </div>
-                      {/* ADD THE LANGUAGE SUPPORT NOTE HERE */}
-      {profile?.subscription_tier === 'complete_plan' && (
-        <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-          CLIL language support: {profile?.language_support || 'English'}.
-          To change language support, please contact admin.
-        </div>
-      )}
+                    
+                    {profile?.subscription_tier === 'complete_plan' && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+                        CLIL language support: {profile?.language_support || 'English'}.
+                        To change language support, please contact admin.
+                      </div>
+                    )}
+                    
                     <div className="pt-3 space-y-2">
                       <button 
                         onClick={() => router.push('/subscribe?upgrade=true')}
@@ -1546,48 +1479,48 @@ const ContinueLearningSection = () => {
                       </button>
                       
                       <Link 
-  href="/billing"
-  className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
->
-  Manage Billing
-</Link>
+                        href="/billing"
+                        className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
+                      >
+                        Manage Billing
+                      </Link>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Quick Actions */}
-              <div className="bg-white rounded-xl p-6 shadow-sm border">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
-                
-                <div className="space-y-3">
-                  <Link 
-                    href="/analytics" 
-                    className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span>View Analytics</span>
-                  </Link>
+              {/* Quick Actions - Only show for paid users */}
+              {profile?.subscription_tier !== 'free' && (
+                <div className="bg-white rounded-xl p-6 shadow-sm border">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
                   
-                  {profile?.subscription_tier !== 'free' && (
-  <Link 
-    href="/billing"
-    className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
-  >
-    <CreditCard className="h-4 w-4" />
-    <span>Billing & Account</span>
-  </Link>
-                  )}
-                  
-                  <Link 
-                    href="/subscribe" 
-                    className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    <span>{profile?.subscription_tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}</span>
-                  </Link>
+                  <div className="space-y-3">
+                    <Link 
+                      href="/analytics" 
+                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>View Analytics</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/billing"
+                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      <span>Billing & Account</span>
+                    </Link>
+                    
+                    <Link 
+                      href="/subscribe?upgrade=true" 
+                      className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                      <span>Change Plan</span>
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -1601,7 +1534,6 @@ const ContinueLearningSection = () => {
           onComplete={(score) => {
             setShowVocabReview(false);
             console.log('Vocabulary review completed with score:', score);
-            // You could save this score to the database here if desired
           }}
         />
       )}
