@@ -1672,7 +1672,7 @@ if (!lesson) {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Exercise Navigation Sidebar - HIDDEN ON MOBILE */}
           <div className="hidden lg:block lg:col-span-1">
@@ -1724,12 +1724,12 @@ if (!lesson) {
           {/* Main Exercise Content - FULL WIDTH ON MOBILE */}
           <div className="col-span-1 lg:col-span-3">
             {/* Mobile Exercise Navigation - COMPACT TOP BAR */}
-            <div className="lg:hidden mb-6 bg-white rounded-lg shadow-sm p-4">
+            <div className="lg:hidden mb-4 bg-white rounded-lg shadow-sm p-3">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-gray-900 text-sm">
                   {exercises[currentExercise]?.name}
                 </h3>
-                <span className="text-sm text-gray-500">
+                <span className="text-xs text-gray-500">
                   {currentExercise + 1}/{exercises.length}
                 </span>
               </div>
@@ -1743,7 +1743,7 @@ if (!lesson) {
                       setCurrentExercise(index);
                       scrollToLessonContent();
                     }}
-                    className={`flex-shrink-0 w-8 h-8 rounded-full text-xs font-medium transition-colors ${
+                    className={`flex-shrink-0 w-7 h-7 rounded-full text-xs font-medium transition-colors ${
                       currentExercise === index
                         ? 'bg-blue-600 text-white'
                         : exerciseProgress[index]
@@ -1757,13 +1757,13 @@ if (!lesson) {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-8">
+            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-8">
               {/* Lesson Image */}
-              <div className="mb-6 sm:mb-8">
+              <div className="mb-4 sm:mb-8">
                 <img
                   src={`/images/lessons/${lesson.image_filename || 'placeholder'}.jpg`}
                   alt={lesson.title}
-                  className="w-full h-48 sm:h-64 object-cover rounded-lg"
+                  className="w-full h-40 sm:h-64 object-cover rounded-lg"
                   onError={(e) => {
                     e.currentTarget.src = '/images/lessons/placeholder.jpg';
                   }}
@@ -1935,18 +1935,18 @@ if (!lesson) {
                 )}
 
                 {/* Exercise Navigation */}
-                <div className="flex justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
+                <div className="flex justify-between mt-4 sm:mt-8 pt-3 sm:pt-6 border-t border-gray-200">
                   <button
                     onClick={() => {
                       setCurrentExercise(Math.max(0, currentExercise - 1));
                       scrollToLessonContent();
                     }}
                     disabled={currentExercise === 0}
-                    className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 sm:px-4 py-2 text-sm sm:text-base text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ← Previous
                   </button>
-                  <span className="text-sm text-gray-500 flex items-center">
+                  <span className="text-xs sm:text-sm text-gray-500 flex items-center">
                     {currentExercise + 1} of {exercises.length}
                   </span>
                   <button
@@ -1955,7 +1955,7 @@ if (!lesson) {
                       scrollToLessonContent();
                     }}
                     disabled={currentExercise === exercises.length - 1}
-                    className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>
