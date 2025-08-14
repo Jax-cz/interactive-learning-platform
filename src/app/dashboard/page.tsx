@@ -922,7 +922,7 @@ const ContinueLearningSection = () => {
         </div>
         <button
   onClick={() => router.push('/lessons')}
-  className="px-4 sm:px-8 py-4 sm:py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm sm:text-lg transition-colors shadow-lg hover:shadow-xl min-h-[80px] sm:min-h-[64px] flex items-center justify-center"
+  className="px-4 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm sm:text-lg transition-colors shadow-lg hover:shadow-xl flex items-center justify-center w-full sm:w-auto"
 >
   <div className="text-center leading-tight">
     <div className="block sm:hidden">
@@ -1057,6 +1057,45 @@ const ContinueLearningSection = () => {
               Track your progress and unlock new content as you learn
             </p>
           </div>
+
+{/* Free User Upgrade Banner - Only show for free users */}
+{profile?.subscription_tier === 'free' && (
+  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 mb-8 text-white">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-4">
+        <div className="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Trophy className="w-8 h-8 text-white" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold mb-1">Unlock Your Full Learning Potential</h2>
+          <p className="text-blue-100 mb-2">
+            You're currently exploring samples. Upgrade to access our complete learning system!
+          </p>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span className="flex items-center">
+              <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+              Weekly new lessons
+            </span>
+            <span className="flex items-center">
+              <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+              Progressive learning path
+            </span>
+            <span className="flex items-center">
+              <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+              Multi-language support
+            </span>
+          </div>
+        </div>
+      </div>
+      <Link 
+        href="/subscribe" 
+        className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold text-lg hover:bg-blue-50 transition-colors shadow-lg whitespace-nowrap ml-4"
+      >
+        Choose Your Plan →
+      </Link>
+    </div>
+  </div>
+)}
 
           {/* CONTINUE LEARNING - Prominent placement */}
           <ContinueLearningSection />

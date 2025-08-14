@@ -153,6 +153,17 @@ function MultiVocabularyComponent({ vocabulary, onComplete, isMultiLanguage }: M
 
   const allMatched = vocabPairs.every((_, index) => matches[index] !== undefined);
 
+// ADD THIS FUNCTION HERE
+const removeMatch = (wordIndex: number) => {
+  setMatches(prev => {
+    const newMatches = { ...prev };
+    delete newMatches[wordIndex];
+    return newMatches;
+  });
+  setSelectedWord(null);
+};
+
+
   return (
     <div className="space-y-6">
       <div className="p-4 bg-blue-50 rounded-lg">
@@ -172,29 +183,45 @@ function MultiVocabularyComponent({ vocabulary, onComplete, isMultiLanguage }: M
           <div className="space-y-3">
             {words.map((word, index) => (
               <button
-                key={index}
-                onClick={() => handleWordClick(index)}
-                disabled={showResults || matches[index] !== undefined}
-                className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
-                  selectedWord === index
-                    ? 'border-blue-500 bg-blue-100'
-                    : matches[index] !== undefined
-                    ? showResults && matches[index] === index
-                      ? 'border-green-500 bg-green-50'
-                      : showResults
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-purple-500 bg-purple-50'
-                    : 'border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50'
-                } disabled:cursor-not-allowed`}
-              >
-                <div className="font-medium text-gray-900">{word.text}</div>
-                {isMultiLanguage && word.translation && (
-                  <div className="text-sm text-gray-600 italic">{word.translation}</div>
-                )}
-                {matches[index] !== undefined && (
-                  <div className="text-sm text-gray-600 mt-1">✓ Matched</div>
-                )}
-              </button>
+  key={index}
+  onClick={() => handleWordClick(index)}
+  disabled={showResults}
+  className={`w-full p-4 text-left rounded-lg border-2 transition-colors ${
+    selectedWord === index
+      ? 'border-blue-500 bg-blue-100'
+      : matches[index] !== undefined
+      ? showResults && matches[index] === index
+        ? 'border-green-500 bg-green-50'
+        : showResults
+        ? 'border-red-500 bg-red-50'
+        : 'border-purple-500 bg-purple-50'
+      : 'border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50'
+  } disabled:cursor-not-allowed`}
+>
+  <div className="flex items-center justify-between">
+    <div className="flex-1">
+      <div className="font-medium text-gray-900">{word.text}</div>
+      {isMultiLanguage && word.translation && (
+        <div className="text-sm text-gray-600 italic">{word.translation}</div>
+      )}
+      {matches[index] !== undefined && (
+        <div className="text-sm text-gray-600 mt-1">✓ Matched</div>
+      )}
+    </div>
+    {matches[index] !== undefined && !showResults && (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          removeMatch(index);
+        }}
+        className="text-red-600 hover:text-red-800 ml-2 p-1"
+        title="Remove match"
+      >
+        ✕
+      </button>
+    )}
+  </div>
+</button>
             ))}
           </div>
         </div>
@@ -1630,14 +1657,18 @@ if (!lesson) {
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(getCompletedCount() / exercises.length) * 100}%` }}
-              ></div>
-            </div>
-          </div>
+<div className="mt-4">
+  <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+    <span>Exercise Progress</span>
+    <span>{getCompletedCount()}/{exercises.length} complete</span>
+  </div>
+  <div className="bg-gray-200 rounded-full h-2">
+    <div
+      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+      style={{ width: `${(getCompletedCount() / exercises.length) * 100}%` }}
+    ></div>
+  </div>
+</div>
         </div>
       </div>
 
