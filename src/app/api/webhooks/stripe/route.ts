@@ -356,9 +356,9 @@ function getPlanTypeFromPriceId(priceId: string): string {
 function getContentTypeFromTier(tier: string): string {
   switch (tier) {
     case 'esl_only':
-      return 'ESL';
+      return 'esl';
     case 'clil_plus':
-      return 'CLIL';
+      return 'clil';
     case 'complete_plan':
       return 'both';
     case 'free':

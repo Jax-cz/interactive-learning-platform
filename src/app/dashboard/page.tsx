@@ -921,7 +921,7 @@ const ContinueLearningSection = () => {
       <div>Learning →</div>
     </div>
     <div className="hidden sm:block">
-      Choose Lesson →
+      Continue Learning →
     </div>
   </div>
 </button>
