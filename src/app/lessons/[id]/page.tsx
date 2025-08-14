@@ -1673,7 +1673,7 @@ if (!lesson) {
       </div>
 
       <div className="max-w-4xl mx-auto px-2 sm:px-4 py-6 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:grid lg:grid-cols-4 lg:gap-8">
           {/* Exercise Navigation Sidebar - HIDDEN ON MOBILE */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-8">
