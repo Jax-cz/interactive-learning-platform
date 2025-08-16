@@ -14,12 +14,13 @@ const SUBSCRIPTION_PLANS = {
     price: 600, // $6.00 in cents
     priceId: 'price_1RvfVX1Bs1c9VoEosolWxJlo',
     features: [
-      'All ESL news lessons',
-      'Beginner and intermediate levels',
-      'Switch difficulty levels anytime',
-      'Progress tracking',
-      'Weekly new content',
-      'English language only'
+      'All ESL news lessons (English only)',
+  'Adult-focused current events content',
+  'Beginner and intermediate levels',
+  'Switch difficulty levels anytime',
+  'Progress tracking',
+  'Weekly new content',
+  'No native language support'
     ]
   },
   clil_plus: {
@@ -45,15 +46,15 @@ const SUBSCRIPTION_PLANS = {
     price: 900, // $9.00 in cents
     priceId: 'price_1RvfXm1Bs1c9VoEoYDZuJMog',
     features: [
-      'All ESL news lessons (adults)',
-      'All CLIL science lessons (teenagers)', 
-      'Beginner and intermediate levels',
-      'Switch difficulty levels anytime',
-      'Multi-language vocabulary support',
-      'Choose your support language: EN, CZ, DE, FR, ES, PL',
-      'Progress tracking across all content',
-      'Weekly new content in both categories',
-      'Best value - includes everything'
+      'All ESL news lessons (English only)',
+  'All CLIL science lessons (with language support)', 
+  'Beginner and intermediate levels',
+  'Switch difficulty levels anytime',
+  'CLIL multi-language vocabulary support',
+  'Choose your CLIL support language: EN, CZ, DE, FR, ES, PL',
+  'Progress tracking across all content',
+  'Weekly new content in both categories',
+  'Best value - includes everything'
     ],
     isBundle: true,
     savings: 'Save $3/month vs separate plans'
