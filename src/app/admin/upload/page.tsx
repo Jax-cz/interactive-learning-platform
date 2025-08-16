@@ -26,6 +26,14 @@ interface ParsedLesson {
   errors: string[];
 }
 
+// ✅ HELPER FUNCTION - Moved to top level for better organization
+const calculateReleaseDate = (weekNumber: number): string => {
+  const startDate = new Date('2025-08-01'); // Friday, August 01, 2025
+  const releaseDate = new Date(startDate);
+  releaseDate.setDate(startDate.getDate() + (weekNumber - 1) * 7);
+  return releaseDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+};
+
 export default function AdminUploadPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -105,36 +113,36 @@ export default function AdminUploadPage() {
           }
           break;
         case 'VOCABULARY_PREVIEW':
-  const allParts = content.split(' / ').map(item => item.trim()).filter(item => item);
-  
-  // For CLIL multi-language: pairs are [word]-[translation] / [definition]-[def_translation]
-  // For ESL: simple word-definition format
-  
-  lesson.sections.vocabularyPreview = [];
-  
-  // Check if this is multi-language format (contains brackets)
-  if (content.includes('[') && content.includes(']')) {
-    // CLIL format: group every 2 items as word-definition pairs
-    for (let i = 0; i < allParts.length; i += 2) {
-      const wordPart = allParts[i];      // [word]-[translation]  
-      const defPart = allParts[i + 1];   // [definition]-[def_translation]
-      
-      if (wordPart && defPart) {
-        lesson.sections.vocabularyPreview.push(`${wordPart} / ${defPart}`);
-      } else if (wordPart) {
-        // Odd number, add the remaining word
-        lesson.sections.vocabularyPreview.push(wordPart);
-      }
-    }
-  } else {
-    // ESL format: each item is already a word-definition pair
-    lesson.sections.vocabularyPreview = allParts;
-  }
-  
-  console.log('Total vocabulary parts found:', allParts.length);
-  console.log('Vocabulary pairs created:', lesson.sections.vocabularyPreview.length);
-  console.log('Vocabulary pairs:', lesson.sections.vocabularyPreview);
-  break;
+          const allParts = content.split(' / ').map(item => item.trim()).filter(item => item);
+          
+          // For CLIL multi-language: pairs are [word]-[translation] / [definition]-[def_translation]
+          // For ESL: simple word-definition format
+          
+          lesson.sections.vocabularyPreview = [];
+          
+          // Check if this is multi-language format (contains brackets)
+          if (content.includes('[') && content.includes(']')) {
+            // CLIL format: group every 2 items as word-definition pairs
+            for (let i = 0; i < allParts.length; i += 2) {
+              const wordPart = allParts[i];      // [word]-[translation]  
+              const defPart = allParts[i + 1];   // [definition]-[def_translation]
+              
+              if (wordPart && defPart) {
+                lesson.sections.vocabularyPreview.push(`${wordPart} / ${defPart}`);
+              } else if (wordPart) {
+                // Odd number, add the remaining word
+                lesson.sections.vocabularyPreview.push(wordPart);
+              }
+            }
+          } else {
+            // ESL format: each item is already a word-definition pair
+            lesson.sections.vocabularyPreview = allParts;
+          }
+          
+          console.log('Total vocabulary parts found:', allParts.length);
+          console.log('Vocabulary pairs created:', lesson.sections.vocabularyPreview.length);
+          console.log('Vocabulary pairs:', lesson.sections.vocabularyPreview);
+          break;
         case 'READING_TEXT':
           lesson.sections.readingText = content;
           break;
@@ -191,41 +199,39 @@ export default function AdminUploadPage() {
               };
             });
           break;
-        // Replace the SEQUENCE_PROCESS case with this simpler version:
-
-case 'SEQUENCE_PROCESS':
-  const lines = content.split('\n').filter(line => line.trim());
-  
-  let instructionLine = '';
-  let stepsContent = '';
-  
-  // First line is the instruction, second line contains the steps with |
-  if (lines.length >= 2) {
-    instructionLine = lines[0]; // "Put the octopus defense steps in the correct order from first to last."
-    stepsContent = lines[1];    // "[Change color to blend in]-[Změnit barvu pro sladění] | [Hide in small spaces]..."
-  } else if (lines.length === 1) {
-    // Only one line, check if it contains | (steps) or not (instruction)
-    if (lines[0].includes('|')) {
-      stepsContent = lines[0];
-    } else {
-      instructionLine = lines[0];
-    }
-  }
-  
-  // Parse steps separated by |
-  if (stepsContent) {
-    lesson.sections.sequenceProcess = stepsContent
-      .split('|')
-      .map(step => step.trim())
-      .filter(step => step);
-  }
-    
-  // Store instructions if found
-  if (instructionLine) {
-    lesson.sections.sequenceInstructions = instructionLine;
-  }
-  
-  break;
+        case 'SEQUENCE_PROCESS':
+          const lines = content.split('\n').filter(line => line.trim());
+          
+          let instructionLine = '';
+          let stepsContent = '';
+          
+          // First line is the instruction, second line contains the steps with |
+          if (lines.length >= 2) {
+            instructionLine = lines[0]; // "Put the octopus defense steps in the correct order from first to last."
+            stepsContent = lines[1];    // "[Change color to blend in]-[Změnit barvu pro sladění] | [Hide in small spaces]..."
+          } else if (lines.length === 1) {
+            // Only one line, check if it contains | (steps) or not (instruction)
+            if (lines[0].includes('|')) {
+              stepsContent = lines[0];
+            } else {
+              instructionLine = lines[0];
+            }
+          }
+          
+          // Parse steps separated by |
+          if (stepsContent) {
+            lesson.sections.sequenceProcess = stepsContent
+              .split('|')
+              .map(step => step.trim())
+              .filter(step => step);
+          }
+            
+          // Store instructions if found
+          if (instructionLine) {
+            lesson.sections.sequenceInstructions = instructionLine;
+          }
+          
+          break;
         case 'VOCABULARY_PRACTICE':
           // Parse practice items: sentence (answer)
           lesson.sections.vocabularyPractice = content
@@ -301,31 +307,20 @@ case 'SEQUENCE_PROCESS':
     try {
       setIsUploading(true);
 
+      // ✅ UPDATED LESSON DATA with auto-release integration
       const lessonData = {
-  title: parsedLesson.title,
-  level: parsedLesson.level.toLowerCase(),
-  content_type: parsedLesson.contentType.toLowerCase(),
-  language_support: parsedLesson.languageSupport,
-  filename: parsedLesson.filename,
-  content_data: parsedLesson.sections,
-  published: true,                    // ✅ Uploaded to database
-  is_published: false,                // ✅ NEW: Not yet available to students
-  week_number: parsedLesson.weekNumber,
-  release_date: calculateReleaseDate(parsedLesson.weekNumber), // ✅ NEW: Calculate release date
-  image_filename: parsedLesson.imageFilename
-};
-
-// ✅ NEW: Add this helper function above the lessonData object
-function calculateReleaseDate(weekNumber: number) {
-  // Start date for week 1 (adjust this to your preferred start date)
-  const startDate = new Date('2025-08-01'); // Friday, August 01, 2025
-  
-  // Calculate release date: start date + (week number - 1) * 7 days
-  const releaseDate = new Date(startDate);
-  releaseDate.setDate(startDate.getDate() + (weekNumber - 1) * 7);
-  
-  return releaseDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-}
+        title: parsedLesson.title,
+        level: parsedLesson.level.toLowerCase(),
+        content_type: parsedLesson.contentType.toLowerCase(),
+        language_support: parsedLesson.languageSupport,
+        filename: parsedLesson.filename,
+        content_data: parsedLesson.sections,
+        published: true,                    // ✅ Uploaded to database (admin can see)
+        is_published: false,                // ✅ Not yet available to students
+        week_number: parsedLesson.weekNumber,
+        release_date: calculateReleaseDate(parsedLesson.weekNumber), // ✅ Auto-calculated release date
+        image_filename: parsedLesson.imageFilename
+      };
 
       const response = await fetch('/api/lessons/save', {
         method: 'POST',

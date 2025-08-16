@@ -1262,6 +1262,25 @@ const ContinueLearningSection = () => {
                   </div>
                 </div>
               </div>
+               <div className="bg-white rounded-xl p-4 shadow-sm border hover:shadow-md transition-shadow">
+                <Link href="/analytics" className="block">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-3 bg-indigo-100 rounded-lg">
+                        <BarChart3 className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">Detailed Analytics</h3>
+                        <p className="text-sm text-gray-600">View session history, progress trends, and learning insights</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center text-indigo-600">
+                      <span className="text-sm font-medium mr-1">View Details</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
             </div>
 
             {/* Sidebar - Right Side */}
@@ -1488,40 +1507,7 @@ const ContinueLearningSection = () => {
                   </div>
                 </div>
               )}
-
-              {/* Quick Actions - Only show for paid users */}
-              {profile?.subscription_tier !== 'free' && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
-                  
-                  <div className="space-y-3">
-                    <Link 
-                      href="/analytics" 
-                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>View Analytics</span>
-                    </Link>
-                    
-                    <Link 
-                      href="/billing"
-                      className="flex items-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      <span>Billing & Account</span>
-                    </Link>
-                    
-                    <Link 
-                      href="/subscribe?upgrade=true" 
-                      className="flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
-                    >
-                      <TrendingUp className="h-4 w-4" />
-                      <span>Change Plan</span>
-                    </Link>
-                  </div>
                 </div>
-              )}
-            </div>
           </div>
         </div>
       </div>

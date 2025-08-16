@@ -357,13 +357,12 @@ export default function BillingPage() {
           <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
             <div className="flex items-center space-x-2 mb-4">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              <h3 className="text-lg font-semibold text-red-900">Danger Zone</h3>
+              <h3 className="text-lg font-semibold text-red-900">Cancel Subscription</h3>
             </div>
             
             <div className="mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">Cancel Subscription</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Cancel your subscription. You'll keep access until the end of your current billing period.
+                <p className="text-sm text-gray-600 mb-4">
+                You'll keep access until the end of your current billing period.
               </p>
               
               <button
@@ -372,7 +371,7 @@ export default function BillingPage() {
                 className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <X className="h-4 w-4" />
-                <span>{processing ? 'Processing...' : 'Cancel Subscription'}</span>
+                <span>{processing ? 'Processing...' : 'Proceed with Cancellation'}</span>
               </button>
             </div>
 

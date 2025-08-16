@@ -153,46 +153,84 @@ export default function LearningAnalytics() {
   };
 
   const calculateSimpleStreak = (sessions: LearningSession[]): number => {
-    if (sessions.length === 0) return 0;
+  if (sessions.length === 0) return 0;
+  
+  const today = new Date();
+  const currentWeekStart = getWeekStart(today);
+  
+  // Group sessions by week
+  const sessionsByWeek = new Map<string, LearningSession[]>();
+  
+  sessions.forEach(session => {
+    const sessionDate = new Date(session.completed_at);
+    const weekKey = getWeekStart(sessionDate).toISOString().split('T')[0]; // YYYY-MM-DD format
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (!sessionsByWeek.has(weekKey)) {
+      sessionsByWeek.set(weekKey, []);
+    }
+    sessionsByWeek.get(weekKey)!.push(session);
+  });
+  
+  let streak = 0;
+  let checkDate = new Date(currentWeekStart);
+  
+  // Check up to 26 weeks back (6 months)
+  for (let i = 0; i < 26; i++) {
+    const weekKey = checkDate.toISOString().split('T')[0];
+    const weekSessions = sessionsByWeek.get(weekKey) || [];
     
-    let streak = 0;
-    let currentDate = new Date(today);
-    
-    // Check last 14 days for streak
-    for (let i = 0; i < 14; i++) {
-      const dayHasSession = sessions.some(s => {
-        const sessionDate = new Date(s.completed_at);
-        sessionDate.setHours(0, 0, 0, 0);
-        return sessionDate.getTime() === currentDate.getTime();
-      });
+    if (weekSessions.length > 0) {
+      // User has activity this week - continue streak
+      streak++;
       
-      if (dayHasSession) {
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else if (i === 0) {
-        // Check yesterday if no session today
-        currentDate.setDate(currentDate.getDate() - 1);
-        const yesterdayHasSession = sessions.some(s => {
-          const sessionDate = new Date(s.completed_at);
-          sessionDate.setHours(0, 0, 0, 0);
-          return sessionDate.getTime() === currentDate.getTime();
-        });
-        if (yesterdayHasSession) {
-          streak++;
-          currentDate.setDate(currentDate.getDate() - 1);
+      // Move to previous week
+      checkDate.setDate(checkDate.getDate() - 7);
+    } else {
+      // No activity this week
+      if (i === 0) {
+        // Current week has no activity, check if we're still within grace period
+        const daysSinceWeekStart = Math.floor((today.getTime() - currentWeekStart.getTime()) / (24 * 60 * 60 * 1000));
+        
+        if (daysSinceWeekStart <= 2) {
+          // Grace period: It's still early in the learning week (Fri-Sat), check previous week
+          checkDate.setDate(checkDate.getDate() - 7);
+          continue;
         } else {
+          // It's later in the week (Sun-Thu) with no activity, break streak
           break;
         }
       } else {
+        // Past week with no activity - streak is broken
         break;
       }
     }
-    
-    return streak;
-  };
+  }
+  
+  return streak;
+};
+
+// Helper function to get the start of the learning week (Friday)
+// This aligns with your Friday content release schedule
+const getWeekStart = (date: Date): Date => {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 5 = Friday
+  
+  // Calculate days back to Friday
+  // Friday = 0 days back, Saturday = 1 day back, ..., Thursday = 6 days back
+  let daysBack;
+  if (day >= 5) {
+    // Friday (5) or Saturday (6) or Sunday (0)
+    daysBack = day === 0 ? 2 : day - 5; // Sunday is 2 days after Friday
+  } else {
+    // Monday (1) through Thursday (4)
+    daysBack = day + 2; // Monday is 4 days after Friday, Tuesday is 3, etc.
+  }
+  
+  const weekStart = new Date(d);
+  weekStart.setDate(d.getDate() - daysBack);
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+};
 
   const formatTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
@@ -323,14 +361,7 @@ export default function LearningAnalytics() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Success Message */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
-          <h2 className="text-green-800 font-semibold mb-1">🎉 Analytics Working!</h2>
-          <p className="text-green-700 text-sm">
-            Successfully loaded your learning data from the database.
-          </p>
-        </div>
-
+        
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border">
@@ -388,7 +419,9 @@ export default function LearningAnalytics() {
               <div>
                 <p className="text-sm text-gray-600">Current Streak</p>
                 <p className="text-3xl font-bold text-gray-900">{analytics.currentStreak}</p>
-                <p className="text-sm text-orange-600">days in a row</p>
+                <p className="text-sm text-orange-600">
+  {analytics.currentStreak === 1 ? 'week active' : 'weeks in a row'}
+</p>
               </div>
             </div>
           </div>
