@@ -418,8 +418,31 @@ if (loading || !isFullyLoaded) {
                     <div className="mb-8">
                       <h2 className="text-xl font-bold text-gray-900 mb-6">Your Learning Path</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {regularLessons.map((lesson, index) => {
-                          const status = getLessonStatus(lesson, index);
+                        {regularLessons
+                          .map((lesson, originalIndex) => ({ 
+                            lesson, 
+                            status: getLessonStatus(lesson, originalIndex),
+                            originalIndex 
+                          }))
+                          .sort((a, b) => {
+                            // Priority sorting: available > completed > locked
+                            const statusOrder: { [key: string]: number } = { 'available': 0, 'completed': 1, 'locked': 2 };
+                            const aOrder = statusOrder[a.status.status] ?? 3;
+                            const bOrder = statusOrder[b.status.status] ?? 3;
+                            
+                            if (aOrder !== bOrder) {
+                              return aOrder - bOrder;
+                            }
+                            // Within same status, sort by week number
+                            if (a.status.status === 'available') {
+                              return a.lesson.week_number - b.lesson.week_number; // Available: oldest first (chronological)
+                            } else if (a.status.status === 'completed') {
+                              return b.lesson.week_number - a.lesson.week_number; // Completed: newest first (recent completions)
+                            } else {
+                              return a.lesson.week_number - b.lesson.week_number; // Locked: oldest first (next unlock progression)
+                            }
+                          })
+                          .map(({ lesson, status }, displayIndex) => {
                           
                           return (
                             <div
@@ -518,7 +541,7 @@ if (loading || !isFullyLoaded) {
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Sample Lessons - Collapsible */}
                   {sampleLessons.length > 0 && (
                     <div className="mb-8">

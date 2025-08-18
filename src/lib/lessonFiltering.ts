@@ -121,7 +121,7 @@ export const loadLessonsForUser = async (
       const { data, error } = await supabase
         .from('lessons')
         .select('*')
-        .eq('is_published', true)
+       
         .order('week_number', { ascending: true });
 
       if (error) throw error;
