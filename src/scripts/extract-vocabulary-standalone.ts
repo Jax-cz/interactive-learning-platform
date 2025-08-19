@@ -1,14 +1,29 @@
 // Create this as: src/scripts/extract-vocabulary-standalone.ts
 // Standalone script with Supabase credentials
 
+// Create this as: src/scripts/extract-vocabulary-standalone.ts
+// Standalone script with Supabase credentials
+
+import * as dotenv from 'dotenv';
+import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
-// ⚠️ REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-const SUPABASE_URL = process.env.SUPABASE_URL;
+// Load environment variables from root directory
+dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+
+// Debug: Check what directory we're in and if env vars are loaded
+console.log('🔍 Current working directory:', process.cwd());
+console.log('🔍 Debug - SUPABASE_URL:', process.env.SUPABASE_URL ? 'Found' : 'Missing');
+console.log('🔍 Debug - SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Found' : 'Missing');
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Check if environment variables exist
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('❌ Environment variables not found!');
+  console.log('💡 Make sure .env.local exists in the root directory');
+  console.log('💡 Run this script from the project root: npx tsx src/scripts/extract-vocabulary-standalone.ts');
   throw new Error('Missing required environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
 }
 
