@@ -4,8 +4,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // ⚠️ REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-const SUPABASE_URL = 'https://kwdaeigjtsxsnjnzlatt.supabase.co'; // Your Supabase URL from console logs
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZGFlaWdqdHN4c25qbnpsYXR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzk3OTg1MywiZXhwIjoyMDY5NTU1ODUzfQ.jD-_yX_lZcFt4nQu3eWFEeJKOsg5BJMnu-k5VfceYwI'; // Get this from Supabase Dashboard
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Check if environment variables exist
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  throw new Error('Missing required environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+}
 
 // Create Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
