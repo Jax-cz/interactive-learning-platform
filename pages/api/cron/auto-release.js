@@ -4,22 +4,27 @@
 import { autoReleaseLessons } from '../../../lib/auto-release.js';
 
 export default async function handler(req, res) {
-  // Security check - only allow Vercel cron
-  const authHeader = req.headers.authorization;
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-  
-  if (authHeader !== expectedAuth) {
-    console.log('❌ Unauthorized cron request');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Security check - allow Vercel cron OR manual with secret
+  const authHeader = req.headers.authorization;
+  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+  const isVercelCron = req.headers['user-agent']?.includes('vercel') || 
+                       req.headers['x-vercel-id'] || 
+                       !authHeader; // Vercel cron doesn't send auth header
+  
+  // Reject if neither Vercel cron nor valid manual auth
+  if (!isVercelCron && authHeader !== expectedAuth) {
+    console.log('❌ Unauthorized cron request');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     console.log('🕐 Cron job triggered at:', new Date().toISOString());
+    console.log('🔍 Request source:', isVercelCron ? 'Vercel Cron' : 'Manual with Auth');
     
     // Run your exact same auto-release logic
     const result = await autoReleaseLessons();
