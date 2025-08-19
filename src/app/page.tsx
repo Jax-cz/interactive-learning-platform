@@ -121,7 +121,7 @@ export default function HomePage() {
       <div className="flex items-start">
         <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">5</span>
         <div>
-          <span className="font-semibold">Subscribe if you love it</span> - Unlock unlimited access to weekly new content ($6 or $9/month)
+          <span className="font-semibold">Subscribe if you love it</span> - Unlock access to weekly new content ($6 or $9/month)
         </div>
       </div>
     </div>
