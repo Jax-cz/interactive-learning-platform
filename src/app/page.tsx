@@ -64,7 +64,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <h1 className="text-xl md:text-2xl font-bold text-blue-600">
-                Easy Language Learning Interactive Learning Platform
+                Easy Language Learning Interactive Platform
               </h1>
             </div>
 
