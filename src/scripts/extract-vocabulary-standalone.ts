@@ -5,10 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 
 // ⚠️ REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
 const SUPABASE_URL = 'https://kwdaeigjtsxsnjnzlatt.supabase.co'; // Your Supabase URL from console logs
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZGFlaWdqdHN4c25qbnpsYXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM5Nzk4NTMsImV4cCI6MjA2OTU1NTg1M30.u0ZBqi7pg5kxz-M749NuDOvwSVpeho1506buauOZVD4'; // Get this from Supabase Dashboard
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3ZGFlaWdqdHN4c25qbnpsYXR0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzk3OTg1MywiZXhwIjoyMDY5NTU1ODUzfQ.jD-_yX_lZcFt4nQu3eWFEeJKOsg5BJMnu-k5VfceYwI'; // Get this from Supabase Dashboard
 
 // Create Supabase client
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Function to extract vocabulary from content_data
 function extractVocabularyFromContent(contentData: any): any[] {

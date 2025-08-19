@@ -94,17 +94,12 @@ export default function SubscribePage() {
     setLoading(false);
   };
 
-  const handlePlanSelection = (planId: string) => {
-    setSelectedPlan(planId);
-    // Reset level and language when plan changes
-    setSelectedLevel(null);
-    setSelectedLanguage(null);
-    
-    // Auto-scroll to level selection after a brief delay
+  // IMPROVED SCROLL FUNCTIONS
+  const scrollToLevelSelection = () => {
     setTimeout(() => {
       const levelSection = document.getElementById('level-selection');
       if (levelSection) {
-        const headerOffset = 100; // Offset to account for header
+        const headerOffset = 80; // Reduced offset for better positioning
         const elementPosition = levelSection.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
         
@@ -113,7 +108,61 @@ export default function SubscribePage() {
           behavior: 'smooth'
         });
       }
-    }, 150);
+    }, 400); // Increased from 150ms to 400ms
+  };
+
+  const scrollToNextSection = (planType: string) => {
+    setTimeout(() => {
+      if (planType.includes('clil') || planType.includes('complete')) {
+        // Scroll to language selection
+        const languageSection = document.getElementById('language-selection');
+        if (languageSection) {
+          const headerOffset = 80;
+          const elementPosition = languageSection.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      } else {
+        // ESL plan - scroll to payment (centered)
+        scrollToPaymentCentered();
+      }
+    }, 400); // Increased from 100-150ms to 400ms
+  };
+
+  const scrollToPaymentCentered = () => {
+    setTimeout(() => {
+      const subscribeSection = document.getElementById('subscribe-section');
+      if (subscribeSection) {
+        // Calculate center position
+        const elementRect = subscribeSection.getBoundingClientRect();
+        const elementHeight = elementRect.height;
+        const viewportHeight = window.innerHeight;
+        
+        // Center the element in viewport
+        const centerOffset = (viewportHeight - elementHeight) / 2;
+        const elementPosition = elementRect.top + window.pageYOffset;
+        const centeredPosition = elementPosition - centerOffset;
+        
+        window.scrollTo({
+          top: Math.max(0, centeredPosition), // Ensure we don't scroll above page top
+          behavior: 'smooth'
+        });
+      }
+    }, 400); // Increased from 100ms to 400ms
+  };
+
+  const handlePlanSelection = (planId: string) => {
+    setSelectedPlan(planId);
+    // Reset level and language when plan changes
+    setSelectedLevel(null);
+    setSelectedLanguage(null);
+    
+    // Use improved scroll function
+    scrollToLevelSelection();
   };
 
   // Helper functions for plan information
@@ -383,7 +432,7 @@ export default function SubscribePage() {
           </div>
         </div>
 
-        {/* Level Selection - appears after plan selection (FIXED STYLING + AUTO-SCROLL) */}
+        {/* Level Selection - appears after plan selection */}
         {selectedPlan && (
           <div id="level-selection" className="mt-8 bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
@@ -393,37 +442,7 @@ export default function SubscribePage() {
               <button
                 onClick={() => {
                   setSelectedLevel('beginner');
-                  // Auto-scroll to language selection for CLIL plans
-                  if (selectedPlan.includes('clil') || selectedPlan.includes('complete')) {
-                    setTimeout(() => {
-                      const languageSection = document.getElementById('language-selection');
-                      if (languageSection) {
-                        const headerOffset = 100;
-                        const elementPosition = languageSection.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                        
-                        window.scrollTo({
-                          top: offsetPosition,
-                          behavior: 'smooth'
-                        });
-                      }
-                    }, 150);
-                  } else {
-                    // For ESL, scroll to subscribe button
-                    setTimeout(() => {
-                      const subscribeSection = document.getElementById('subscribe-section');
-                      if (subscribeSection) {
-                        const headerOffset = 100;
-                        const elementPosition = subscribeSection.getBoundingClientRect().top;
-                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                        
-                        window.scrollTo({
-                          top: offsetPosition,
-                          behavior: 'smooth'
-                        });
-                      }
-                    }, 150);
-                  }
+                  scrollToNextSection(selectedPlan);
                 }}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   selectedLevel === 'beginner'
@@ -442,31 +461,7 @@ export default function SubscribePage() {
               <button
                 onClick={() => {
                   setSelectedLevel('intermediate');
-                  // Auto-scroll to language selection for CLIL plans
-                  if (selectedPlan.includes('clil') || selectedPlan.includes('complete')) {
-                    setTimeout(() => {
-                      const languageSection = document.getElementById('language-selection');
-                      if (languageSection) {
-                        languageSection.scrollIntoView({ 
-                          behavior: 'smooth', 
-                          block: 'start',
-                          inline: 'nearest'
-                        });
-                      }
-                    }, 100);
-                  } else {
-                    // For ESL, scroll to subscribe button
-                    setTimeout(() => {
-                      const subscribeSection = document.getElementById('subscribe-section');
-                      if (subscribeSection) {
-                        subscribeSection.scrollIntoView({ 
-                          behavior: 'smooth', 
-                          block: 'start',
-                          inline: 'nearest'
-                        });
-                      }
-                    }, 100);
-                  }
+                  scrollToNextSection(selectedPlan);
                 }}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   selectedLevel === 'intermediate'
@@ -497,17 +492,7 @@ export default function SubscribePage() {
                   key={language}
                   onClick={() => {
                     setSelectedLanguage(language);
-                    // Auto-scroll to subscribe button after language selection
-                    setTimeout(() => {
-                      const subscribeSection = document.getElementById('subscribe-section');
-                      if (subscribeSection) {
-                        subscribeSection.scrollIntoView({ 
-                          behavior: 'smooth', 
-                          block: 'start',
-                          inline: 'nearest'
-                        });
-                      }
-                    }, 100);
+                    scrollToPaymentCentered();
                   }}
                   className={`p-3 rounded-lg border-2 transition-all ${
                     selectedLanguage === language

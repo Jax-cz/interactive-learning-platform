@@ -81,6 +81,55 @@ export default function HomePage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Welcome Message Section - ADD THIS */}
+<div className="text-center mb-8 bg-white rounded-2xl shadow-lg p-8 md:p-12">
+  <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+    Discover Interactive English Learning That Actually Works
+  </h2>
+  
+  <p className="text-base text-gray-600 mb-8 max-w-5xl mx-auto">
+    We want you to experience our lessons firsthand before you subscribe. In just a few simple steps, you'll be trying real interactive lessons tailored to your level and interests.
+  </p>
+  
+  <div className="bg-blue-50 rounded-xl p-6 mb-8">
+    
+    <div className="text-left max-w-2xl mx-auto space-y-3">
+      <div className="flex items-start">
+        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">1</span>
+        <div>
+          <span className="font-semibold">Choose your level</span> - Select your current English proficiency
+        </div>
+      </div>
+      <div className="flex items-start">
+        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">2</span>
+        <div>
+          <span className="font-semibold">Pick your content type</span> - News articles (ESL) or Science topics (CLIL)
+        </div>
+      </div>
+      <div className="flex items-start">
+        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">3</span>
+        <div>
+          <span className="font-semibold">Select language support</span> - Get vocabulary help in your native language (optional)
+        </div>
+      </div>
+      <div className="flex items-start">
+        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">4</span>
+        <div>
+          <span className="font-semibold">Try sample lessons</span> - Experience our interactive format for free
+        </div>
+      </div>
+      <div className="flex items-start">
+        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">5</span>
+        <div>
+          <span className="font-semibold">Subscribe if you love it</span> - Unlock unlimited access to weekly new content ($6 or $9/month)
+        </div>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+
         {/* Progress Indicator */}
         <div className="flex items-center justify-center mb-12">
           <div className="flex items-center space-x-4">
