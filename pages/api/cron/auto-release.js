@@ -4,8 +4,8 @@
 import { autoReleaseLessons } from '../../../lib/auto-release.js';
 
 export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
+  // Allow both GET (Vercel Run button) and POST (scheduled cron)
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
