@@ -53,7 +53,7 @@ function AuthCallbackContent() {
         }
 
         // Check if this is an email confirmation
-        const type = searchParams.get('type');
+        const type = searchParams?.get('type');
         
         if (type === 'signup') {
   // Email confirmation successful - go directly to dashboard
