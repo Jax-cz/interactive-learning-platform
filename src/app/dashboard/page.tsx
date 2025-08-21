@@ -1484,8 +1484,8 @@ const ContinueLearningSection = () => {
                     
                     {profile?.subscription_tier === 'complete_plan' && (
                       <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
-                        CLIL language support: {profile?.language_support || 'English'}.
-                        To change language support, please contact admin.
+                        Language support: {profile?.language_support || 'English'}.
+                        To change language, please use the contact form below.
                       </div>
                     )}
                     
@@ -1503,6 +1503,15 @@ const ContinueLearningSection = () => {
                       >
                         Manage Billing
                       </Link>
+                      <a
+                        href="https://easylanguagelearning.net/contact"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
+>
+  Contact Support
+</a>
+                      
                     </div>
                   </div>
                 </div>
