@@ -4,7 +4,25 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Configure Supabase client with proper session persistence
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Use localStorage for persistent sessions (instead of sessionStorage)
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    // Keep sessions alive
+    persistSession: true,
+    // Automatically detect sessions from URL (for email confirmations, etc.)
+    detectSessionInUrl: true,
+    // Set longer session refresh threshold
+    autoRefreshToken: true,
+  },
+  // Optional: Configure longer timeout
+  global: {
+    headers: {
+      'X-Client-Info': 'interactive-learning-platform'
+    }
+  }
+})
 
 // Database Types - Updated to match your actual schema
 export type Database = {

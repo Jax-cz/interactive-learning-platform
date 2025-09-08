@@ -1238,17 +1238,19 @@ const ContinueLearningSection = () => {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 shadow-sm border">
-                  <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <Flame className="h-4 w-4 text-orange-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Streak</p>
-                      <p className="font-bold text-gray-900">{streakData?.currentStreak || 0}</p>
-                    </div>
-                  </div>
-                </div>
+               {false && (
+  <div className="bg-white rounded-xl p-4 shadow-sm border">
+    <div className="flex items-center space-x-2">
+      <div className="p-2 bg-orange-100 rounded-lg">
+        <Flame className="h-4 w-4 text-orange-600" />
+      </div>
+      <div>
+        <p className="text-xs text-gray-600">Streak</p>
+        <p className="font-bold text-gray-900">{streakData?.currentStreak || 0}</p>
+      </div>
+    </div>
+  </div>
+)}
 
                 <div className="bg-white rounded-xl p-4 shadow-sm border">
                   <div className="flex items-center space-x-2">
@@ -1287,7 +1289,8 @@ const ContinueLearningSection = () => {
             <div className="space-y-6">
               
               {/* Weekly Streak */}
-              {streakData && (
+              {/*}
+              {false && streakData && (
                 <div className="bg-white rounded-xl p-6 shadow-sm border">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
                     <Flame className="h-5 w-5 text-orange-500" />
@@ -1328,6 +1331,7 @@ const ContinueLearningSection = () => {
                   )}
                 </div>
               )}
+                */}
 
               {/* Learning Level */}
               {profile && (
@@ -1379,6 +1383,7 @@ const ContinueLearningSection = () => {
               )}
 
               {/* Achievements */}
+              {/*}
               <div className="bg-white rounded-xl p-6 shadow-sm border">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center space-x-2">
                   <Award className="h-5 w-5 text-blue-600" />
@@ -1454,6 +1459,7 @@ const ContinueLearningSection = () => {
                   )}
                 </div>
               </div>
+              */}
 
               {/* Subscription Status - Only show for paid users */}
               {profile?.subscription_tier !== 'free' && (

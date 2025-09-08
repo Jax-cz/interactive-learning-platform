@@ -14,9 +14,10 @@ interface MultiWarmerComponentProps {
   questions: string[];
   onComplete: () => void;
   isMultiLanguage: boolean;
+  showTranslations: boolean;
 }
 
-function MultiWarmerComponent({ questions, onComplete, isMultiLanguage }: MultiWarmerComponentProps) {
+function MultiWarmerComponent({ questions, onComplete, isMultiLanguage, showTranslations }: MultiWarmerComponentProps) {
   const parseMultiLanguageText = (text: string) => {
     if (!isMultiLanguage) return { english: text, translation: '' };
     const match = text.match(/^\[(.+?)\]-\[(.+?)\]$/);
@@ -28,14 +29,14 @@ function MultiWarmerComponent({ questions, onComplete, isMultiLanguage }: MultiW
 
   return (
     <div className="space-y-4">
-      <p className="text-gray-600">Think about these questions before reading:</p>
+      <p className="text-gray-800">Think about these questions before reading:</p>
       <div className="space-y-3">
         {questions.map((question, index) => {
           const parsed = parseMultiLanguageText(question);
           return (
             <div key={index} className="p-4 bg-blue-50 rounded-lg">
               <p className="text-blue-900 font-medium">{index + 1}. {parsed.english}</p>
-              {isMultiLanguage && parsed.translation && (
+              {isMultiLanguage && showTranslations && parsed.translation && (
                 <p className="text-blue-700 text-sm mt-1 italic">{parsed.translation}</p>
               )}
             </div>
@@ -57,9 +58,10 @@ interface MultiVocabularyComponentProps {
   vocabulary: string[];
   onComplete: () => void;
   isMultiLanguage: boolean;
+  showTranslations: boolean;
 }
 
-function MultiVocabularyComponent({ vocabulary, onComplete, isMultiLanguage }: MultiVocabularyComponentProps) {
+function MultiVocabularyComponent({ vocabulary, onComplete, isMultiLanguage, showTranslations }: MultiVocabularyComponentProps) {
   const [selectedWord, setSelectedWord] = useState<number | null>(null);
   const [matches, setMatches] = useState<{[key: number]: number}>({});
   const [showResults, setShowResults] = useState(false);
@@ -177,7 +179,7 @@ const removeMatch = (wordIndex: number) => {
         </p>
       </div>
       
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid sm:grid-cols-2 gap-6">
         <div>
           <h3 className="font-semibold text-gray-900 mb-4">Words</h3>
           <div className="space-y-3">
@@ -201,11 +203,11 @@ const removeMatch = (wordIndex: number) => {
   <div className="flex items-center justify-between">
     <div className="flex-1">
       <div className="font-medium text-gray-900">{word.text}</div>
-      {isMultiLanguage && word.translation && (
-        <div className="text-sm text-gray-600 italic">{word.translation}</div>
+      {isMultiLanguage && showTranslations && word.translation && (
+        <div className="text-sm 800 italic">{word.translation}</div>
       )}
       {matches[index] !== undefined && (
-        <div className="text-sm text-gray-600 mt-1">✓ Matched</div>
+        <div className="text-sm text-gray-800 mt-1">✓ Matched</div>
       )}
     </div>
     {matches[index] !== undefined && !showResults && (
@@ -245,8 +247,8 @@ const removeMatch = (wordIndex: number) => {
                   } disabled:cursor-not-allowed`}
                 >
                   <div>{defItem.text}</div>
-                  {isMultiLanguage && defItem.translation && (
-                    <div className="text-sm text-gray-600 italic mt-1">{defItem.translation}</div>
+                  {isMultiLanguage && showTranslations && defItem.translation && (
+                    <div className="text-sm text-gray-800 italic mt-1">{defItem.translation}</div>
                   )}
                   {isUsed && <span className="ml-2">✓</span>}
                 </button>
@@ -341,8 +343,7 @@ interface MultiReadingComponentProps {
 }
 
 function MultiReadingComponent({ readingText, onComplete, isMultiLanguage, showTranslations }: MultiReadingComponentProps) {
-  const [showTranslation, setShowTranslation] = useState(showTranslations);
-
+  
   const parseReadingText = (text: string) => {
     if (!isMultiLanguage) {
       return text.split('\n').filter(p => p.trim()).map(paragraph => ({
@@ -374,18 +375,7 @@ function MultiReadingComponent({ readingText, onComplete, isMultiLanguage, showT
 
   return (
     <div className="space-y-4">
-      {isMultiLanguage && (
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Reading Text</h3>
-          <button
-            onClick={() => setShowTranslation(!showTranslation)}
-            className="bg-blue-100 text-blue-800 px-3 py-1 rounded text-sm hover:bg-blue-200 transition-colors"
-          >
-            {showTranslation ? 'Hide Translation' : 'Show Translation'}
-          </button>
-        </div>
-      )}
-
+      
       <div className="prose max-w-none">
   {parsedText.map((sentence, index) => {
     // Check if this sentence is the source attribution
@@ -395,13 +385,13 @@ function MultiReadingComponent({ readingText, onComplete, isMultiLanguage, showT
       <div key={index} className="mb-4">
         <p className={`leading-relaxed mb-1 ${
           isSourceAttribution 
-            ? 'text-sm text-gray-600 italic border-t pt-3 mt-4' 
+            ? 'text-sm text-gray-800 italic border-t pt-3 mt-4' 
             : 'text-gray-800'
         }`}>
           {sentence.english}
         </p>
-        {isMultiLanguage && showTranslation && sentence.translation && !isSourceAttribution && (
-          <p className="text-gray-600 text-sm italic leading-relaxed">
+        {isMultiLanguage && showTranslations && sentence.translation && !isSourceAttribution && (
+          <p className="text-gray-800 text-sm italic leading-relaxed">
             {sentence.translation}
           </p>
         )}
@@ -425,6 +415,7 @@ interface MultiTrueFalseComponentProps {
   questions: Array<{question: string, answer: boolean}>;
   onComplete: () => void;
   isMultiLanguage: boolean;
+  showTranslations: boolean;
 }
 
 function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: MultiTrueFalseComponentProps) {
@@ -462,7 +453,7 @@ function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: Mul
 
   return (
     <div className="space-y-4">
-      <p className="text-gray-600">Are these statements true or false?</p>
+      <p className="text-gray-800">Are these statements true or false?</p>
       <div className="space-y-4">
         {questions.map((item, index) => {
           const parsed = parseQuestion(item.question);
@@ -471,7 +462,7 @@ function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: Mul
               <div className="mb-3">
                 <p className="text-gray-800">{parsed.english}</p>
                 {isMultiLanguage && parsed.translation && (
-                  <p className="text-gray-600 text-sm italic mt-1">{parsed.translation}</p>
+                  <p className="text-gray-800 text-sm italic mt-1">{parsed.translation}</p>
                 )}
               </div>
               <div className="flex space-x-3">
@@ -542,9 +533,10 @@ interface SequenceProcessComponentProps {
   sequenceInstructions: string | undefined;  // ADD THIS - separate instructions
   onComplete: () => void;
   isMultiLanguage: boolean;
+  showTranslations: boolean;
 }
 
-function SequenceProcessComponent({ sequenceContent, sequenceInstructions, onComplete, isMultiLanguage }: SequenceProcessComponentProps) {
+function SequenceProcessComponent({ sequenceContent, sequenceInstructions, onComplete, isMultiLanguage, showTranslations }: SequenceProcessComponentProps) {
   const [userOrder, setUserOrder] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [draggedItem, setDraggedItem] = useState<number | null>(null);
@@ -690,7 +682,7 @@ const parseInstructions = (instructions: string) => {
         <p className="text-yellow-800 font-medium text-sm">
           {parsedInstructions.english}
         </p>
-        {isMultiLanguage && parsedInstructions.translation && (
+        {isMultiLanguage && showTranslations && parsedInstructions.translation && (
           <p className="text-yellow-700 text-sm italic mt-1">
             {parsedInstructions.translation}
           </p>
@@ -701,7 +693,7 @@ const parseInstructions = (instructions: string) => {
 </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid sm:grid-cols-2 gap-6">
         {/* Available Steps */}
         <div>
           <h3 className="font-semibold text-gray-900 mb-4">Available Steps</h3>
@@ -723,10 +715,10 @@ const parseInstructions = (instructions: string) => {
                   } ${draggedItem === index ? 'opacity-50' : ''}`}
                 >
                   <div className="font-medium">{step.english}</div>
-                  {isMultiLanguage && step.translation && (
-                    <div className="text-sm text-gray-600 italic mt-1">{step.translation}</div>
+                  {isMultiLanguage && showTranslations && step.translation && (
+                    <div className="text-sm text-gray-800 italic mt-1">{step.translation}</div>
                   )}
-                  {isUsed && <div className="text-xs text-gray-500 mt-1">✓ Used</div>}
+                  {isUsed && <div className="text-xs text-gray-700 mt-1">✓ Used</div>}
                 </div>
               );
             })}
@@ -766,7 +758,7 @@ const parseInstructions = (instructions: string) => {
                         <div>
                           <div className="font-medium">{step.english}</div>
                           {isMultiLanguage && step.translation && (
-                            <div className="text-sm text-gray-600 italic">{step.translation}</div>
+                            <div className="text-sm text-gray-800 italic">{step.translation}</div>
                           )}
                         </div>
                       </div>
@@ -798,7 +790,7 @@ const parseInstructions = (instructions: string) => {
               <div
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(0)}
-                className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500"
+                className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-700"
               >
                 Drag steps here or click steps to add them
               </div>
@@ -839,10 +831,12 @@ interface VocabularyPracticeComponentProps {
   vocabularyPractice: Array<{sentence: string, answer: string}>;
   onComplete: () => void;
   isMultiLanguage: boolean;
+  showTranslations: boolean;
   isLastExercise?: boolean;
+
 }
 
-function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLanguage, isLastExercise = false }: VocabularyPracticeComponentProps) {
+function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLanguage, showTranslations, isLastExercise = false }: VocabularyPracticeComponentProps) {
   const [answers, setAnswers] = useState<{[key: number]: string}>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -911,7 +905,7 @@ function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLa
                 key={index}
                 className={`px-3 py-1 rounded-lg text-sm font-medium ${
                   isExhausted && showResults
-                    ? 'bg-gray-300 text-gray-600'
+                    ? 'bg-gray-300 text-gray-800'
                     : 'bg-blue-100 text-blue-800'
                 }`}
               >
@@ -940,8 +934,8 @@ function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLa
       : '_____'
   )}
 </p>
-{isMultiLanguage && parsed.translationSentence && (
-  <p className="text-gray-600 italic">
+{isMultiLanguage && showTranslations && parsed.translationSentence && (
+  <p className="text-gray-800 italic">
     {parsed.translationSentence}
   </p>
 )}
@@ -949,7 +943,7 @@ function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLa
               </div>
 
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">Choose the correct word:</p>
+                <p className="text-sm text-gray-800 mb-2">Choose the correct word:</p>
                 <div className="flex flex-wrap gap-2">
                   {shuffledWordBank.map((word, wordIndex) => {
                     const isSelected = answers[index] === word;
@@ -980,7 +974,7 @@ function VocabularyPracticeComponent({ vocabularyPractice, onComplete, isMultiLa
 
               {answers[index] && (
                 <div className="mt-3">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-800">
                     Your answer: <span className="font-medium">{answers[index]}</span>
                   </p>
                   {showResults && (
@@ -1059,7 +1053,7 @@ function TrueFalseComponent({ questions, onComplete }: TrueFalseComponentProps) 
 
   return (
     <div className="space-y-4">
-      <p className="text-gray-600">Are these statements true or false?</p>
+      <p className="text-gray-800">Are these statements true or false?</p>
       <div className="space-y-4">
         {questions.map((item, index) => (
           <div key={index} className="p-4 border border-gray-200 rounded-lg">
@@ -1193,7 +1187,7 @@ function FindInTextComponent({ findInText, readingText, onComplete }: FindInText
 
             {showParagraph[index] && (
               <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">Click the word that means "{item.clue}":</p>
+                <p className="text-sm text-gray-800 mb-2">Click the word that means "{item.clue}":</p>
                 <div className="flex flex-wrap gap-2">
                   {paragraphs[item.paragraph - 1]?.split(' ').map((word, wordIndex) => {
                     const cleanWord = word.replace(/[.,!?;:]/g, '');
@@ -1226,7 +1220,7 @@ function FindInTextComponent({ findInText, readingText, onComplete }: FindInText
 
             {answers[index] && (
               <div className="mt-3">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-800">
                   Your answer: <span className="font-medium">{answers[index]}</span>
                 </p>
                 {showResults && (
@@ -1340,7 +1334,7 @@ function GrammarFocusComponent({ grammarFocus, onComplete, isLastExercise = fals
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">Choose the correct preposition:</p>
+              <p className="text-sm text-gray-800 mb-2">Choose the correct preposition:</p>
               <div className="flex flex-wrap gap-2">
                 {shuffledOptions[index].map((option, optionIndex) => {
                   const isSelected = answers[index] === option;
@@ -1371,7 +1365,7 @@ function GrammarFocusComponent({ grammarFocus, onComplete, isLastExercise = fals
 
             {answers[index] && (
               <div className="mt-3">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-800">
                   Your answer: <span className="font-medium">{answers[index]}</span>
                 </p>
                 {showResults && (
@@ -1449,13 +1443,14 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(true);
   const [currentExercise, setCurrentExercise] = useState(0);
   const [exerciseProgress, setExerciseProgress] = useState<{[key: number]: boolean}>({});
+  const [globalShowTranslations, setGlobalShowTranslations] = useState(false);
 
   // Determine if this is a multi-language lesson (CLIL with translation support)
   const isMultiLanguage = lesson?.content_type === 'clil' && lesson?.language_support !== 'English';
   const shouldShowTranslations = isMultiLanguage;
 
   const exercises = [
-    { id: 0, name: 'Warmer Questions', type: 'warmer' },
+    { id: 0, name: 'Warm-up Questions', type: 'warmer' },
     { id: 1, name: 'Vocabulary Preview', type: 'vocabulary' },
     { id: 2, name: 'Reading', type: 'reading' },
     { id: 3, name: 'True/False', type: 'trueFalse' },
@@ -1582,7 +1577,7 @@ const isLastExerciseBeforeSummary = (currentIndex: number) => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading lesson...</p>
+          <p className="text-gray-800">Loading lesson...</p>
         </div>
       </div>
     );
@@ -1633,7 +1628,7 @@ if (!lesson) {
                     lesson.title
                   }
                 </h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                <div className="flex items-center space-x-4 text-sm text-gray-800 mt-1">
                   <span className="capitalize">{lesson.level}</span>
                   <span>•</span>
                   <span className="uppercase">{lesson.content_type}</span>
@@ -1649,7 +1644,7 @@ if (!lesson) {
               </div>
             </div>
             <div className="hidden sm:block text-right">
-  <div className="text-sm text-gray-600">Progress</div>
+  <div className="text-sm text-gray-800">Progress</div>
   <div className="text-lg font-semibold text-blue-600">
     {getCompletedCount()}/{exercises.length}
   </div>
@@ -1658,7 +1653,7 @@ if (!lesson) {
 
           {/* Progress Bar */}
 <div className="mt-4">
-  <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+  <div className="flex items-center justify-between text-xs text-gray-800 mb-2">
     <span>Exercise Progress</span>
     <span>{getCompletedCount()}/{exercises.length} complete</span>
   </div>
@@ -1691,7 +1686,7 @@ if (!lesson) {
                         ? 'bg-blue-100 text-blue-800 font-medium'
                         : exerciseProgress[index]
                         ? 'bg-green-50 text-green-700'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-gray-800 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1729,7 +1724,7 @@ if (!lesson) {
                 <h3 className="font-semibold text-gray-900 text-sm">
                   {exercises[currentExercise]?.name}
                 </h3>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs 700">
                   {currentExercise + 1}/{exercises.length}
                 </span>
               </div>
@@ -1748,7 +1743,7 @@ if (!lesson) {
                         ? 'bg-blue-600 text-white'
                         : exerciseProgress[index]
                         ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-600'
+                        : 'bg-gray-200 text-gray-800'
                     }`}
                   >
                     {exerciseProgress[index] ? '✓' : index + 1}
@@ -1769,6 +1764,17 @@ if (!lesson) {
                   }}
                 />
               </div>
+              {/* Global Translation Toggle */}
+{isMultiLanguage && (
+  <div className="mb-6 flex justify-end">
+    <button
+      onClick={() => setGlobalShowTranslations(!globalShowTranslations)}
+      className="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg text-sm hover:bg-blue-200 transition-colors font-medium"
+    >
+      {globalShowTranslations ? 'Hide Translations' : 'Show Translations'}
+    </button>
+  </div>
+)}
 
               {/* Exercise Content */}
               <div>
@@ -1782,6 +1788,7 @@ if (!lesson) {
                   <MultiWarmerComponent
                     questions={lesson.content_data.warmerQuestions}
                     isMultiLanguage={isMultiLanguage}
+                    showTranslations={globalShowTranslations}
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(1);
@@ -1794,6 +1801,7 @@ if (!lesson) {
                   <MultiVocabularyComponent
                     vocabulary={lesson.content_data.vocabularyPreview}
                     isMultiLanguage={isMultiLanguage}
+                    showTranslations={globalShowTranslations}
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(2);
@@ -1806,7 +1814,7 @@ if (!lesson) {
                   <MultiReadingComponent
                     readingText={lesson.content_data.readingText}
                     isMultiLanguage={isMultiLanguage}
-                    showTranslations={shouldShowTranslations}
+                    showTranslations={globalShowTranslations}
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(3);
@@ -1821,6 +1829,7 @@ if (!lesson) {
                       <MultiTrueFalseComponent
                         questions={lesson.content_data.trueFalse}
                         isMultiLanguage={isMultiLanguage}
+                        showTranslations={globalShowTranslations}
                         onComplete={() => {
                           markExerciseComplete(currentExercise);
                           setCurrentExercise(currentExercise + 1);
@@ -1869,6 +1878,7 @@ if (!lesson) {
                     sequenceContent={lesson?.content_data?.sequenceProcess}
                     sequenceInstructions={lesson?.content_data?.sequenceInstructions}
                     isMultiLanguage={isMultiLanguage}
+                    showTranslations={globalShowTranslations}
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
@@ -1881,6 +1891,7 @@ if (!lesson) {
                   <VocabularyPracticeComponent
                     vocabularyPractice={lesson.content_data.vocabularyPractice || []}
                     isMultiLanguage={isMultiLanguage}
+                    showTranslations={globalShowTranslations}
                     isLastExercise={isLastExerciseBeforeSummary(currentExercise)}
                     onComplete={() => {
                       markExerciseComplete(currentExercise);
@@ -1942,11 +1953,11 @@ if (!lesson) {
                       scrollToLessonContent();
                     }}
                     disabled={currentExercise === 0}
-                    className="px-2 sm:px-4 py-2 text-sm sm:text-base text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 sm:px-4 py-2 text-sm sm:text-base text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     ← Previous
                   </button>
-                  <span className="text-xs sm:text-sm text-gray-500 flex items-center">
+                  <span className="text-xs sm:text-sm text-gray-700 flex items-center">
                     {currentExercise + 1} of {exercises.length}
                   </span>
                   <button

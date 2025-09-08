@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn, resetPassword } from '@/lib/auth';
@@ -33,6 +33,15 @@ export default function LoginPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const router = useRouter();
 
+// Load remembered email when page loads
+useEffect(() => {
+  const rememberedEmail = localStorage.getItem('rememberedEmail');
+  if (rememberedEmail) {
+    setEmail(rememberedEmail);
+    setRememberMe(true); // Also check the checkbox
+  }
+}, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -55,9 +64,16 @@ export default function LoginPage() {
     }
 
     if (user) {
-      // Successful login - redirect to dashboard
-      router.push('/dashboard');
-    }
+  // Save or remove email based on "Remember me" checkbox
+  if (rememberMe) {
+    localStorage.setItem('rememberedEmail', email);
+  } else {
+    localStorage.removeItem('rememberedEmail');
+  }
+  
+  // Successful login - redirect to dashboard
+  router.push('/dashboard');
+}
 
     setLoading(false);
   };
