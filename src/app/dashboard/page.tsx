@@ -788,12 +788,12 @@ const loadLessonsWithProgression = async (userId: string, access: any, progressi
       const clilLanguage = profile?.language_support || 'English';
       // Show just "CLIL" for English, "CLIL (Language)" for others
       return { 
-        text: clilLanguage === 'English' ? 'CLIL' : `CLIL (${clilLanguage})`, 
+        text: clilLanguage === 'English' ? 'CLIL' : `CLIL PLAN (${clilLanguage})`, 
         color: 'purple' 
       };
     case 'complete_plan':
       const languageDisplay = profile?.language_support || 'English';
-      return { text: `Complete (${languageDisplay})`, color: 'green' };
+      return { text: `Complete Plan (${languageDisplay})`, color: 'green' };
     default:
       return { text: 'Free', color: 'gray' };
   }
@@ -1028,7 +1028,7 @@ const ContinueLearningSection = () => {
                   badge.color === 'orange' ? 'bg-orange-50 text-orange-800 border-orange-200' :
                   'bg-red-50 text-red-800 border-red-200'
                 }`}>
-                  {badge.text.toUpperCase()} PLAN
+                  {badge.text.toUpperCase()}
                 </span>
               </div>
               <div className="flex items-center space-x-4">
