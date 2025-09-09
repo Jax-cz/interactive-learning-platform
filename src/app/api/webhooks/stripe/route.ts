@@ -243,29 +243,28 @@ async function handleSubscriptionUpdated(subscription: any) {
 async function handleSubscriptionDeleted(subscription: any) {
   console.log('Processing subscription deletion:', subscription.id);
   
-  const subscriptionId = subscription.id;
+  const customerId = subscription.customer; // Use customer ID instead
   
   try {
-    // Find user by subscription ID
+    // Find user by customer ID since subscription ID is null
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('stripe_subscription_id', subscriptionId)
+      .eq('stripe_customer_id', customerId) // Changed from stripe_subscription_id
       .single();
 
     if (userError || !user) {
-      console.error('User not found for subscription:', subscriptionId);
+      console.error('User not found for customer:', customerId);
       return;
     }
 
-    // Update user to free tier (keep preferences but remove access)
+    // Update user to free tier
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
         subscription_tier: 'free',
         subscription_status: 'inactive',
-        subscription_end_date: new Date().toISOString(),
-        preferred_content_type: 'free' // Free users get no content access
+        subscription_end_date: new Date().toISOString()
       })
       .eq('id', user.id);
 

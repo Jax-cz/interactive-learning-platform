@@ -338,7 +338,7 @@ export default function BillingPage() {
               className="flex items-center justify-center space-x-2 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Settings className="h-5 w-5" />
-              <span>{processing ? 'Loading...' : 'Manage Billing'}</span>
+              <span>{processing ? 'Loading...' : 'Manage/Cancel Billing'}</span>
             </button>
           )}
 
@@ -353,6 +353,7 @@ export default function BillingPage() {
         </div>
 
         {/* Danger Zone - Only for Active Subscriptions */}
+          {/* TEMPORARILY DISABLED - Use Stripe billing portal for all subscription management
         {profile?.subscription_tier !== 'free' && profile?.subscription_status === 'active' && (
           <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
             <div className="flex items-center space-x-2 mb-4">
@@ -374,8 +375,9 @@ export default function BillingPage() {
                 <span>{processing ? 'Processing...' : 'Proceed with Cancellation'}</span>
               </button>
             </div>
+            */
 
-            {/* Future: Pause Subscription */}
+            /* Future: Pause Subscription 
             <div className="pt-4 border-t border-gray-200">
               <h4 className="font-medium text-gray-900 mb-2">Pause Subscription</h4>
               <p className="text-sm text-gray-600 mb-3">
@@ -391,6 +393,8 @@ export default function BillingPage() {
             </div>
           </div>
         )}
+          */}
+        
 
         {/* Help Section */}
         <div className="bg-white rounded-xl shadow-sm border p-6 mt-6">
