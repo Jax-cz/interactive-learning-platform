@@ -52,40 +52,56 @@ function AuthCallbackContent() {
           return;
         }
 
-        // Check if this is an email confirmation
+        // Get URL parameters
         const type = searchParams?.get('type');
-        console.log('All search params:', Object.fromEntries(searchParams?.entries() || []));
-console.log('Session data:', data);
-console.log('Callback type:', type);
+        const errorParam = searchParams?.get('error');
+        const errorDescription = searchParams?.get('error_description');
         
-        if (type === 'signup') {
-  // Email confirmation successful - go directly to dashboard
-  setSuccess('Email confirmed! Welcome to your learning dashboard...');
-  setLoading(false);
-  
-  // Redirect to dashboard after a brief delay
-  setTimeout(() => {
-    router.push('/dashboard');
-  }, 2000);
-          
-        } else if (type === 'recovery') {
-          // Password reset flow
-          setSuccess('Password reset link verified. You can now set a new password.');
+        // Debug logging
+        console.log('All search params:', Object.fromEntries(searchParams?.entries() || []));
+        console.log('Session data:', data);
+        console.log('Callback type:', type);
+        console.log('Error param:', errorParam);
+
+        // Handle errors first
+        if (errorParam) {
+          if (errorParam === 'access_denied' && errorDescription?.includes('expired')) {
+            setError('The email link has expired. Please request a new password reset.');
+          } else {
+            setError(errorDescription || 'Authentication failed. Please try again.');
+          }
           setLoading(false);
-          
-          // Redirect to password reset form
+          return;
+        }
+
+        // Handle password recovery - CHECK THIS FIRST
+        if (type === 'recovery') {
+          setSuccess('Password reset verified. You can now set a new password.');
+          setLoading(false);
           setTimeout(() => {
             router.push('/auth/reset-password');
           }, 2000);
-          
-        } else if (data.session) {
-          // User is already signed in, redirect to dashboard
-          router.push('/dashboard');
-          
-        } else {
-          // Default: redirect to login
-          router.push('/login');
+          return;
         }
+
+        // Handle email confirmation
+        if (type === 'signup') {
+          setSuccess('Email confirmed! Welcome to your learning dashboard...');
+          setLoading(false);
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 2000);
+          return;
+        }
+
+        // If user has a session but no specific type, go to dashboard
+        if (data.session) {
+          router.push('/dashboard');
+          return;
+        }
+
+        // Default: redirect to login
+        router.push('/login');
         
       } catch (err: any) {
         console.error('Callback handling error:', err);
