@@ -31,9 +31,13 @@ function LoadingFallback() {
   );
 }
 
-// Helper function to parse URL fragments (after #)
-function parseFragment(fragment: string): Record<string, string> {
+// Helper function to parse URL fragments (after #) - capture immediately
+function captureFragmentParams(): Record<string, string> {
   const params: Record<string, string> = {};
+  
+  if (typeof window === 'undefined') return params;
+  
+  const fragment = window.location.hash;
   if (!fragment) return params;
   
   // Remove leading # if present
@@ -46,6 +50,9 @@ function parseFragment(fragment: string): Record<string, string> {
       params[key] = decodeURIComponent(value.replace(/\+/g, ' '));
     }
   });
+  
+  console.log('🔍 Captured fragment params:', params);
+  console.log('🔍 Raw fragment:', fragment);
   
   return params;
 }
@@ -61,40 +68,57 @@ function AuthCallbackContent() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // First, let Supabase handle the auth callback from the URL
-        const { data: authData, error: authError } = await supabase.auth.getSession();
+        // Capture fragment params FIRST before Supabase processes the URL
+        const fragmentParams = captureFragmentParams();
         
-        if (authError) {
-          console.error('Auth session error:', authError);
-          // Don't fail immediately, continue to check URL parameters
-        }
-
-        // Get URL parameters from search params (after ?)
+        // Let Supabase handle the auth callback
+        const { data, error: authError } = await supabase.auth.getSession();
+        
+        console.log('🔍 Supabase session data:', data);
+        console.log('🔍 Supabase auth error:', authError);
+        
+        // Get URL search parameters (after ?)
         const type = searchParams?.get('type');
         const errorParam = searchParams?.get('error');
         const errorDescription = searchParams?.get('error_description');
         
-        // Get parameters from URL fragment (after #) - client-side only
-        const fragment = typeof window !== 'undefined' ? window.location.hash : '';
-        const fragmentParams = parseFragment(fragment);
-        
-        // Use fragment params if search params are empty (common with Supabase auth)
+        // Combine search params and fragment params
         const finalType = type || fragmentParams.type;
         const finalError = errorParam || fragmentParams.error;
         const finalErrorDescription = errorDescription || fragmentParams.error_description;
         const errorCode = fragmentParams.error_code;
         
-        // Debug logging
-        console.log('Search params:', Object.fromEntries(searchParams?.entries() || []));
-        console.log('Fragment params:', fragmentParams);
-        console.log('Fragment string:', fragment);
-        console.log('Auth session data:', authData);
-        console.log('Final type:', finalType);
-        console.log('Final error:', finalError);
-        console.log('Error code:', errorCode);
+        console.log('🔍 Search params:', Object.fromEntries(searchParams?.entries() || []));
+        console.log('🔍 Final type:', finalType);
+        console.log('🔍 Final error:', finalError);
+        console.log('🔍 Error code:', errorCode);
 
-        // Handle errors first
+        // PRIORITY 1: Handle password recovery FIRST (before checking session)
+        if (finalType === 'recovery' || fragmentParams.type === 'recovery') {
+          console.log('🔍 Password recovery detected - PRIORITY ROUTE');
+          console.log('🔍 Fragment access token:', !!fragmentParams.access_token);
+          console.log('🔍 Session access token:', !!data.session?.access_token);
+          
+          // For password recovery, we need some form of valid token
+          if (fragmentParams.access_token || data.session?.access_token) {
+            console.log('✅ Valid recovery tokens found, redirecting to reset password');
+            setSuccess('Password reset link verified. You must set a new password to continue...');
+            setLoading(false);
+            setTimeout(() => {
+              router.push('/auth/reset-password');
+            }, 1500);
+            return;
+          } else {
+            console.log('❌ Recovery type detected but no valid tokens');
+            setError('The password reset link has expired or is invalid. Please request a new one.');
+            setLoading(false);
+            return;
+          }
+        }
+
+        // PRIORITY 2: Handle errors
         if (finalError) {
+          console.log('🔍 Error detected:', finalError);
           if (finalError === 'access_denied') {
             if (errorCode === 'otp_expired' || finalErrorDescription?.includes('expired')) {
               setError('The email link has expired. Please request a new password reset.');
@@ -110,27 +134,9 @@ function AuthCallbackContent() {
           return;
         }
 
-        // Handle password recovery - CHECK THIS FIRST
-        if (finalType === 'recovery') {
-          // For password recovery, we need to check if there's a valid session with access token
-          if (authData?.session?.access_token && fragmentParams.access_token) {
-            console.log('✅ Valid recovery session found, redirecting to reset password');
-            setSuccess('Password reset link verified. Redirecting to set new password...');
-            setLoading(false);
-            setTimeout(() => {
-              router.push('/auth/reset-password');
-            }, 1500);
-            return;
-          } else {
-            console.log('❌ Recovery type detected but no valid session');
-            setError('The password reset link has expired or is invalid. Please request a new one.');
-            setLoading(false);
-            return;
-          }
-        }
-
-        // Handle email confirmation
+        // PRIORITY 3: Handle email confirmation
         if (finalType === 'signup') {
+          console.log('🔍 Email confirmation detected');
           setSuccess('Email confirmed! Welcome to your learning dashboard...');
           setLoading(false);
           setTimeout(() => {
@@ -139,27 +145,26 @@ function AuthCallbackContent() {
           return;
         }
 
-        // If user has a session but no specific type, go to dashboard
-        if (authData?.session) {
-          console.log('✅ Valid session found, redirecting to dashboard');
+        // PRIORITY 4: Handle regular sessions (lowest priority)
+        if (data.session?.access_token) {
+          console.log('✅ Regular session found, redirecting to dashboard');
           router.push('/dashboard');
           return;
         }
 
-        // Default: redirect to login
-        console.log('No valid session or type, redirecting to login');
+        // DEFAULT: No valid session or type
+        console.log('🔍 No valid session or type, redirecting to login');
         router.push('/login');
         
       } catch (err: any) {
-        console.error('Callback handling error:', err);
+        console.error('❌ Callback handling error:', err);
         setError('Something went wrong. Please try again.');
         setLoading(false);
       }
     };
 
-    // Small delay to ensure client-side fragment is available
-    const timer = setTimeout(handleAuthCallback, 100);
-    return () => clearTimeout(timer);
+    // Run immediately without delay
+    handleAuthCallback();
   }, [router, searchParams]);
 
   if (loading) {
