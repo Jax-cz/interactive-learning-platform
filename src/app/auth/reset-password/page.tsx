@@ -84,8 +84,17 @@ export default function ResetPassword() {
       console.log('✅ Password updated successfully:', data);
       setSuccess(true);
       
-      // Redirect to login after success
-      setTimeout(() => {
+      // Clear any stale auth state to prevent token refresh issues
+      setTimeout(async () => {
+        try {
+          // Sign out to clear any old session data
+          await supabase.auth.signOut();
+          console.log('✅ Session cleared after password reset');
+        } catch (err) {
+          console.log('Session clear warning (non-critical):', err);
+        }
+        
+        // Redirect to login with success message
         router.push('/login?message=Password updated successfully. Please log in with your new password.');
       }, 3000);
 
