@@ -467,10 +467,10 @@ const getWeekStart = (date: Date): Date => {
                     </div>
                     
                     <Link 
-                      href={`/lesson/${session.lesson_id}`}
+                      href={`/lessons/${session.lesson_id}`}
                       className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
                     >
-                      Review
+                      Retake Lesson
                     </Link>
                   </div>
                 </div>

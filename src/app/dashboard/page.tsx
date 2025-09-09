@@ -573,6 +573,7 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
         .from('lessons')
         .select('week_number')
         .eq('is_published', true)
+        .lt('week_number', 995)  // Exclude sample lessons
         .order('week_number', { ascending: false })
         .limit(1)
         .single();
@@ -1213,7 +1214,7 @@ const ContinueLearningSection = () => {
               )}
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white rounded-xl p-4 shadow-sm border">
                   <div className="flex items-center space-x-2">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -1343,10 +1344,9 @@ const ContinueLearningSection = () => {
                   
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-gray-600">Current Level</p>
-                      <p className="font-medium text-gray-900 capitalize">
-                        {profile?.preferred_level || 'Both'}
-                      </p>
+                       <p className="text-sm text-gray-600">
+    Current Level: <span className="font-medium text-gray-900 capitalize">{profile?.preferred_level || 'Both'}</span>
+  </p>
                     </div>
                     
                     <div className="space-y-2">
@@ -1471,21 +1471,18 @@ const ContinueLearningSection = () => {
                   
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-gray-600">Current Plan</p>
-                      <p className="font-medium text-gray-900 capitalize">
-                        {profile?.subscription_tier?.replace('_', ' ')}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-gray-600">Status</p>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        profile?.subscription_status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {profile?.subscription_status}
-                      </span>
+                      <p className="text-sm text-gray-600">
+    Plan: <span className="font-medium text-gray-900 capitalize">{profile?.subscription_tier?.replace('_', ' ')}</span>
+  </p>
+  <p className="text-sm text-gray-600">
+    Status: <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+      profile?.subscription_status === 'active' 
+        ? 'bg-green-100 text-green-800' 
+        : 'bg-yellow-100 text-yellow-800'
+    }`}>
+      {profile?.subscription_status}
+    </span>
+  </p>
                     </div>
                     
                     {profile?.subscription_tier === 'complete_plan' && (

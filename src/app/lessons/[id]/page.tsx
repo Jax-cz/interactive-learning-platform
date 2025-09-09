@@ -1650,6 +1650,7 @@ if (!lesson) {
   </div>
 </div>
           </div>
+          
 
           {/* Progress Bar */}
 <div className="mt-4">
