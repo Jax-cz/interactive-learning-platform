@@ -239,18 +239,18 @@ async function handleSubscriptionUpdated(subscription: any) {
   }
 }
 
-// Handle subscription cancellation
+// Handle subscription cancellation - FIXED TO USE CUSTOMER ID
 async function handleSubscriptionDeleted(subscription: any) {
   console.log('Processing subscription deletion:', subscription.id);
   
-  const customerId = subscription.customer; // Use customer ID instead
+  const customerId = subscription.customer; // Use customer ID instead of subscription ID
   
   try {
-    // Find user by customer ID since subscription ID is null
+    // Find user by customer ID since subscription ID might be null
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('stripe_customer_id', customerId) // Changed from stripe_subscription_id
+      .eq('stripe_customer_id', customerId)
       .single();
 
     if (userError || !user) {
@@ -258,13 +258,14 @@ async function handleSubscriptionDeleted(subscription: any) {
       return;
     }
 
-    // Update user to free tier
+    // Update user to free tier (keep preferences but remove access)
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
         subscription_tier: 'free',
         subscription_status: 'inactive',
-        subscription_end_date: new Date().toISOString()
+        subscription_end_date: new Date().toISOString(),
+        preferred_content_type: 'free'
       })
       .eq('id', user.id);
 
