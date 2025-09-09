@@ -31,6 +31,25 @@ function LoadingFallback() {
   );
 }
 
+// Helper function to parse URL fragments (after #)
+function parseFragment(fragment: string): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (!fragment) return params;
+  
+  // Remove leading # if present
+  const cleanFragment = fragment.startsWith('#') ? fragment.slice(1) : fragment;
+  
+  // Split by & and parse key=value pairs
+  cleanFragment.split('&').forEach(pair => {
+    const [key, value] = pair.split('=');
+    if (key && value !== undefined) {
+      params[key] = decodeURIComponent(value.replace(/\+/g, ' '));
+    }
+  });
+  
+  return params;
+}
+
 // Component that uses useSearchParams - must be wrapped in Suspense
 function AuthCallbackContent() {
   const [loading, setLoading] = useState(true);
@@ -43,39 +62,58 @@ function AuthCallbackContent() {
     const handleAuthCallback = async () => {
       try {
         // Handle the auth callback from Supabase
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('Auth callback error:', error);
+        if (sessionError) {
+          console.error('Auth callback error:', sessionError);
           setError('Authentication failed. Please try again.');
           setLoading(false);
           return;
         }
 
-        // Get URL parameters
+        // Get URL parameters from search params (after ?)
         const type = searchParams?.get('type');
         const errorParam = searchParams?.get('error');
         const errorDescription = searchParams?.get('error_description');
         
+        // ALSO get parameters from URL fragment (after #)
+        const fragment = window.location.hash;
+        const fragmentParams = parseFragment(fragment);
+        
+        // Use fragment params if search params are empty (common with Supabase auth)
+        const finalType = type || fragmentParams.type;
+        const finalError = errorParam || fragmentParams.error;
+        const finalErrorDescription = errorDescription || fragmentParams.error_description;
+        const errorCode = fragmentParams.error_code;
+        
         // Debug logging
-        console.log('All search params:', Object.fromEntries(searchParams?.entries() || []));
+        console.log('Search params:', Object.fromEntries(searchParams?.entries() || []));
+        console.log('Fragment params:', fragmentParams);
+        console.log('Fragment string:', fragment);
         console.log('Session data:', data);
-        console.log('Callback type:', type);
-        console.log('Error param:', errorParam);
+        console.log('Final type:', finalType);
+        console.log('Final error:', finalError);
+        console.log('Error code:', errorCode);
 
         // Handle errors first
-        if (errorParam) {
-          if (errorParam === 'access_denied' && errorDescription?.includes('expired')) {
-            setError('The email link has expired. Please request a new password reset.');
+        if (finalError) {
+          if (finalError === 'access_denied') {
+            if (errorCode === 'otp_expired' || finalErrorDescription?.includes('expired')) {
+              setError('The email link has expired. Please request a new password reset.');
+            } else if (errorCode === 'otp_invalid' || finalErrorDescription?.includes('invalid')) {
+              setError('The email link is invalid. Please request a new password reset.');
+            } else {
+              setError(finalErrorDescription || 'Authentication failed. Please try again.');
+            }
           } else {
-            setError(errorDescription || 'Authentication failed. Please try again.');
+            setError(finalErrorDescription || 'Authentication failed. Please try again.');
           }
           setLoading(false);
           return;
         }
 
         // Handle password recovery - CHECK THIS FIRST
-        if (type === 'recovery') {
+        if (finalType === 'recovery') {
           setSuccess('Password reset verified. You can now set a new password.');
           setLoading(false);
           setTimeout(() => {
@@ -85,7 +123,7 @@ function AuthCallbackContent() {
         }
 
         // Handle email confirmation
-        if (type === 'signup') {
+        if (finalType === 'signup') {
           setSuccess('Email confirmed! Welcome to your learning dashboard...');
           setLoading(false);
           setTimeout(() => {
@@ -157,16 +195,16 @@ function AuthCallbackContent() {
               </p>
               <div className="space-y-3">
                 <Link
-                  href="/login"
+                  href="/auth/forgot-password"
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  Go to Login
+                  Request New Reset Link
                 </Link>
                 <Link
-                  href="/register"
+                  href="/login"
                   className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  Create Account
+                  Go to Login
                 </Link>
               </div>
             </div>
