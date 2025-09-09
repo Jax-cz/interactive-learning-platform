@@ -276,7 +276,7 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
 export async function resetPassword(email: string) {
   try {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`
+  redirectTo: `${window.location.origin}/auth/callback`
     })
 
     if (error) throw error
