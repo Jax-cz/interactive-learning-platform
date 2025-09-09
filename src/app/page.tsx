@@ -103,7 +103,7 @@ export default function HomePage() {
       <div className="flex items-start">
         <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">2</span>
         <div>
-          <span className="font-semibold">Pick your content type</span> - News articles (ESL) or Science topics (CLIL)
+          <span className="font-semibold">Pick your content type</span> - News articles or Science topics
         </div>
       </div>
       <div className="flex items-start">
@@ -246,7 +246,7 @@ export default function HomePage() {
                 <div className="w-full h-48 bg-orange-100 rounded-lg mb-4 flex items-center justify-center">
                   <span className="text-8xl">📰</span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">ESL</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">News Articles</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   English through News articles and real-world topics
                 </p>
@@ -267,7 +267,7 @@ export default function HomePage() {
                 <div className="w-full h-48 bg-purple-100 rounded-lg mb-4 flex items-center justify-center">
                   <span className="text-8xl">🔬</span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">CLIL + Language Support</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Science + Language Support</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   English and Science with vocabulary support in your native language
                 </p>
@@ -290,7 +290,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Plan</h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  Everything! ESL + CLIL with language support of your choice
+                  Everything! News + Science with language support of your choice
                 </p>
                 <div className="text-xs text-gray-500">
                   <p>Perfect for: All learners</p>

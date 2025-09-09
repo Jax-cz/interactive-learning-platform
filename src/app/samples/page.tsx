@@ -23,9 +23,9 @@ function SamplesContent() {
   const searchParams = useSearchParams();
   
   // Get parameters from URL
-  const level = searchParams.get('level') || 'beginner';
-  const content = searchParams.get('content') || 'esl';
-  const language = searchParams.get('language') || 'english';
+  const level = searchParams?.get('level') || 'beginner';
+  const content = searchParams?.get('content') || 'esl';
+  const language = searchParams?.get('language') || 'english';
 
   useEffect(() => {
     fetchSamples();
@@ -45,12 +45,12 @@ function SamplesContent() {
       // Filter based on content choice
       if (content === 'esl') {
         query = query.eq('content_type', 'esl');
-        setSelectedPlan('ESL Plan');
+        setSelectedPlan('News Articles Plan');
       } else if (content === 'clil-plus') {
         query = query
           .eq('content_type', 'clil')
           .eq('language_support', language); // Use exact capitalization from database
-        setSelectedPlan('CLIL + Language Support');
+        setSelectedPlan('Science + Language Support');
       } else if (content === 'complete-plan') {
         // For complete plan, get both ESL and CLIL
         const { data: eslSamples } = await supabase
@@ -197,7 +197,7 @@ function SamplesContent() {
                           {lesson.content_type === 'esl' ? '📰' : '🔬'}
                         </div>
                         <div className="text-lg font-semibold text-gray-700 uppercase tracking-wide">
-                          {lesson.content_type} Sample
+  {lesson.content_type === 'esl' ? 'News Articles' : 'Science Articles'} Sample
                         </div>
                       </div>
                     </div>
@@ -216,7 +216,7 @@ function SamplesContent() {
                             Free Sample
                           </span>
                           <span className="capitalize">{lesson.level} Level</span>
-                          <span className="uppercase">{lesson.content_type}</span>
+                          <span>{lesson.content_type === 'esl' ? 'News Articles' : 'Science Articles'}</span>
                           {lesson.language_support !== 'english' && (
                             <span className="flex items-center">
                               <span className="text-lg mr-1">{getLanguageFlag(lesson.language_support)}</span>
@@ -229,9 +229,9 @@ function SamplesContent() {
                     
                     <p className="text-gray-600 mb-6 leading-relaxed">
                       {lesson.content_type === 'esl' 
-                        ? "Experience our interactive news-based English learning with real-world topics, vocabulary exercises, and comprehension activities."
-                        : "Discover our CLIL approach combining science education with English learning, featuring bilingual vocabulary support and interactive experiments."
-                      }
+  ? "Experience our interactive news-based English learning with real-world topics, vocabulary exercises, and comprehension activities."
+  : "Discover our science-based approach combining science education with English learning, featuring bilingual vocabulary support and interactive content."
+}
                     </p>
                     
                     <div className="flex items-center justify-between">
@@ -302,7 +302,7 @@ function SamplesContent() {
       <p className="font-medium">After registration you'll get:</p>
       <div className="flex flex-wrap justify-center gap-4 text-xs">
         <span>✓ Access to ALL sample lessons</span>
-        <span>✓ Both ESL and CLIL content</span>
+        <span>✓ Both News and Science content</span>
         <span>✓ All levels and languages</span>
         <span>✓ Choose your plan later</span>
       </div>

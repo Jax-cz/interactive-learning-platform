@@ -304,6 +304,13 @@ const VocabularyReviewModal: React.FC<VocabularyReviewModalProps> = ({ vocabular
 
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
+  // Helper function for content type display
+  const getContentTypeDisplay = (contentType: string) => {
+    return {
+      'esl': 'News Articles',
+      'clil': 'Science Articles'
+    }[contentType] || contentType;
+  };
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [progress, setProgress] = useState<UserProgress[]>([]);
@@ -783,12 +790,12 @@ const loadLessonsWithProgression = async (userId: string, access: any, progressi
     case 'free':
       return { text: 'Free', color: 'gray' };
     case 'esl_only':
-      return { text: 'ESL', color: 'orange' };
-    case 'clil_plus':
-      const clilLanguage = profile?.language_support || 'English';
+  return { text: 'News Articles', color: 'orange' };
+case 'clil_plus':
+  const clilLanguage = profile?.language_support || 'English';
       // Show just "CLIL" for English, "CLIL (Language)" for others
       return { 
-        text: clilLanguage === 'English' ? 'CLIL' : `CLIL PLAN (${clilLanguage})`, 
+        text: clilLanguage === 'English' ? 'Science Articles' : `Science Articles (${clilLanguage})`, 
         color: 'purple' 
       };
     case 'complete_plan':
@@ -898,16 +905,16 @@ const ContinueLearningSection = () => {
       
       {/* Show breakdown: ESL first, then CLIL, then Samples last */}
       <div className="flex items-center space-x-4 text-sm">
-  {regularESL.length > 0 && (
-    <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
-      {regularESL.length} ESL
-    </span>
-  )}
-  {regularCLIL.length > 0 && (
-    <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
-      {regularCLIL.length} CLIL
-    </span>
-  )}
+{regularESL.length > 0 && (
+  <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full font-medium">
+    {regularESL.length} News Articles
+  </span>
+)}
+{regularCLIL.length > 0 && (
+  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full font-medium">
+    {regularCLIL.length} Science Articles
+  </span>
+)}
 </div>
     </>
   );

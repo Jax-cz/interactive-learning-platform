@@ -54,6 +54,7 @@ function AuthCallbackContent() {
 
         // Check if this is an email confirmation
         const type = searchParams?.get('type');
+        console.log('Callback type:', type); // ADD THIS LINE
         
         if (type === 'signup') {
   // Email confirmation successful - go directly to dashboard

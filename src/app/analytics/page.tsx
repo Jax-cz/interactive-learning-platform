@@ -25,6 +25,13 @@ interface AnalyticsData {
 
 export default function LearningAnalytics() {
   const [user, setUser] = useState<any>(null);
+   // Helper function for content type display
+  const getContentTypeDisplay = (contentType: string) => {
+    return {
+      'esl': 'News Articles',
+      'clil': 'Science Articles'
+    }[contentType] || contentType;
+  };
   const [sessions, setSessions] = useState<LearningSession[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -444,7 +451,7 @@ const getWeekStart = (date: Date): Date => {
                         {String(session.week_number).padStart(3, '0')}. {session.lesson_title}
                       </h3>
                       <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span className="uppercase">{session.content_type}</span>
+                        <span>{getContentTypeDisplay(session.content_type)}</span>
                         <span>•</span>
                         <span className="capitalize">{session.level}</span>
                         <span>•</span>

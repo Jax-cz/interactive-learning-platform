@@ -1437,6 +1437,13 @@ interface LessonData {
 }
 
 export default function LessonPage() {
+  // Helper function for content type display
+  const getContentTypeDisplay = (contentType: string) => {
+    return {
+      'esl': 'News Articles',
+      'clil': 'Science Articles'  
+    }[contentType] || contentType;
+  };
   const params = useParams();
   const router = useRouter();
   const [lesson, setLesson] = useState<LessonData | null>(null);
@@ -1486,11 +1493,15 @@ const isLastExerciseBeforeSummary = (currentIndex: number) => {
 
   useEffect(() => {
     fetchLesson();
-  }, [params.id]);
+  }, [params?.id]);
 
   const fetchLesson = async () => {
     try {
       setLoading(true);
+        if (!params?.id) {
+      router.push('/lessons');
+      return;
+    }
       const { data, error } = await supabase
         .from('lessons')
         .select('*')
@@ -1629,10 +1640,10 @@ if (!lesson) {
                   }
                 </h1>
                 <div className="flex items-center space-x-4 text-sm text-gray-800 mt-1">
-                  <span className="capitalize">{lesson.level}</span>
-                  <span>•</span>
-                  <span className="uppercase">{lesson.content_type}</span>
-                  <span>•</span>
+  <span className="capitalize">{lesson.level}</span>
+  <span>•</span>
+  <span>{getContentTypeDisplay(lesson.content_type)}</span>
+  <span>•</span>
                   <span>Week {lesson.week_number}</span>
                   {isMultiLanguage && (
                     <>

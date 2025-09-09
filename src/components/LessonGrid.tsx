@@ -27,6 +27,13 @@ interface LessonGridProps {
 }
 
 export default function LessonGrid({ admin = false }: LessonGridProps) {
+  // Helper function for content type display
+  const getContentTypeDisplay = (contentType: string) => {
+    return {
+      'esl': 'News Articles',
+      'clil': 'Science Articles'
+    }[contentType] || contentType;
+  };
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -216,13 +223,13 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
       const languageDisplay = profile?.language_support || 'English';
       return { label: `Complete (${languageDisplay})`, color: 'bg-green-100 text-green-800' };
     } else if (contentAccess.canAccessESL) {
-      return { label: 'ESL', color: 'bg-orange-100 text-orange-800' };
-    } else if (contentAccess.canAccessCLIL) {
-      const clilLanguage = profile?.language_support || 'English';
-      return { 
-        label: clilLanguage === 'English' ? 'CLIL' : `CLIL (${clilLanguage})`, 
-        color: 'bg-purple-100 text-purple-800' 
-      };
+  return { label: 'News Articles', color: 'bg-orange-100 text-orange-800' };
+} else if (contentAccess.canAccessCLIL) {
+  const clilLanguage = profile?.language_support || 'English';
+  return { 
+    label: clilLanguage === 'English' ? 'Science Articles' : `Science Articles (${clilLanguage})`, 
+    color: 'bg-purple-100 text-purple-800' 
+  };
     } else {
       return { label: 'Free Plan', color: 'bg-gray-100 text-gray-800' };
     }
@@ -352,8 +359,8 @@ if (loading || !isFullyLoaded) {
                   {filterOptions.contentTypes.map(type => (
                     <option key={type} value={type}>
                       {type === 'all' ? 'All Types' : 
-                       type === 'esl' ? 'ESL (News)' : 
-                       'CLIL (Science)'}
+                       type === 'esl' ? 'News Articles' : 
+                       'Science Articles'}
                     </option>
                   ))}
                 </select>
@@ -473,7 +480,7 @@ if (loading || !isFullyLoaded) {
                                     ? 'bg-orange-500 text-white' 
                                     : 'bg-purple-500 text-white'
                                 }`}>
-                                  {lesson.content_type.toUpperCase()}
+                                  {getContentTypeDisplay(lesson.content_type)}
                                 </div>
 
                                 {status.locked && (
@@ -593,7 +600,7 @@ if (loading || !isFullyLoaded) {
                                       ? 'bg-orange-500 text-white' 
                                       : 'bg-purple-500 text-white'
                                   }`}>
-                                    {lesson.content_type.toUpperCase()}
+                                    {getContentTypeDisplay(lesson.content_type)}
                                   </div>
 
                                   {status.status === 'completed' && (

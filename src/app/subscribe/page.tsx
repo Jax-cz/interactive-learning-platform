@@ -9,12 +9,12 @@ import { getCurrentUser } from '@/lib/auth';
 const SUBSCRIPTION_PLANS = {
   esl_only: {
     id: 'esl_only',
-    name: 'ESL Plan',
-    description: 'Access to all ESL news lessons for adults',
+    name: 'News Article Plan',
+    description: 'Access to all News article lessons for adults',
     price: 600, // $6.00 in cents
     priceId: 'price_1RvfVX1Bs1c9VoEosolWxJlo',
     features: [
-      'All ESL news lessons (English only)',
+      'All News article lessons (English only)',
   'Adult-focused current events content',
   'Beginner and intermediate levels',
   'Switch difficulty levels anytime',
@@ -25,12 +25,12 @@ const SUBSCRIPTION_PLANS = {
   },
   clil_plus: {
     id: 'clil_plus',
-    name: 'CLIL + Language Support',
-    description: 'CLIL science lessons with multi-language support',
+    name: 'Science + Language Support',
+    description: 'Science article lessons with multi-language support',
     price: 600, // $6.00 in cents  
     priceId: 'price_1RvfWo1Bs1c9VoEowauWnLQb',
     features: [
-      'All CLIL science lessons',
+      'All Science article lessons',
       'Beginner and intermediate levels',
       'Switch difficulty levels anytime',
       'Multi-language vocabulary support',
@@ -46,11 +46,11 @@ const SUBSCRIPTION_PLANS = {
     price: 900, // $9.00 in cents
     priceId: 'price_1RvfXm1Bs1c9VoEoYDZuJMog',
     features: [
-      'All ESL news lessons (English only)',
-  'All CLIL science lessons (with language support)', 
+      'All News article lessons (English only)',
+  'All Science article lessons (with language support)', 
   'Beginner and intermediate levels',
   'Switch difficulty levels anytime',
-  'CLIL multi-language vocabulary support',
+  'Multi-language vocabulary support for Science content',
   'Choose your CLIL support language: EN, CZ, DE, FR, ES, PL',
   'Progress tracking across all content',
   'Weekly new content in both categories',
@@ -167,8 +167,8 @@ export default function SubscribePage() {
 
   // Helper functions for plan information
   const getPlanName = (priceId: string) => {
-    if (priceId.includes('esl') || priceId === 'price_1RvfVX1Bs1c9VoEosolWxJlo') return 'ESL Plan';
-    if (priceId.includes('clil') || priceId === 'price_1RvfWo1Bs1c9VoEowauWnLQb') return 'CLIL Plus';
+    if (priceId.includes('esl') || priceId === 'price_1RvfVX1Bs1c9VoEosolWxJlo') return 'News article Plan';
+    if (priceId.includes('clil') || priceId === 'price_1RvfWo1Bs1c9VoEowauWnLQb') return 'Science + Language Support';
     if (priceId.includes('complete') || priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return 'Complete Plan';
     return 'Plan';
   };
@@ -294,7 +294,7 @@ export default function SubscribePage() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-6">
                 <span className="text-2xl">📰</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">ESL Plan</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">News Article Plan</h3>
               <p className="text-gray-600 mb-6">Perfect for adults learning English through current events</p>
               
               <div className="mb-6">
@@ -323,7 +323,7 @@ export default function SubscribePage() {
                     : 'bg-orange-600 text-white hover:bg-orange-700'
                 }`}
               >
-                {selectedPlan === 'esl_only' ? 'Selected ✓' : 'Choose ESL Plan'}
+                {selectedPlan === 'esl_only' ? 'Selected ✓' : 'Choose News Article Plan'}
               </button>
             </div>
           </div>
@@ -342,7 +342,7 @@ export default function SubscribePage() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-6">
                 <span className="text-2xl">🔬</span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">CLIL + Language Support</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Science + Language Support</h3>
               <p className="text-gray-600 mb-6">Science learning with multi-language vocabulary support</p>
               
               <div className="mb-6">
@@ -371,7 +371,7 @@ export default function SubscribePage() {
                     : 'bg-purple-600 text-white hover:bg-purple-700'
                 }`}
               >
-                {selectedPlan === 'clil_plus' ? 'Selected ✓' : 'Choose CLIL Plus'}
+                {selectedPlan === 'clil_plus' ? 'Selected ✓' : 'Choose Science Plan'}
               </button>
             </div>
           </div>
@@ -546,12 +546,12 @@ export default function SubscribePage() {
           <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Frequently Asked Questions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">What's the difference between ESL and CLIL?</h3>
-              <p className="text-gray-600">ESL focuses on English through interesting news articles (mainly for adults), while CLIL teaches science subjects in English (suitable for adults and teenagers).</p>
+              <h3 className="font-semibold text-gray-900 mb-2">What's the difference between News and Science articles?</h3>
+              <p className="text-gray-600">News Articles focus on English through current events (mainly for adults), while Science Articles teach science subjects in English (suitable for adults and teenagers).</p>
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">What languages are supported?</h3>
-              <p className="text-gray-600">CLIL+ and Complete Plan include vocabulary support in English, Czech, German, French, Spanish, and Polish. Russian and Chinese languages will be added later.</p>
+              <p className="text-gray-600">Science and Complete Plan include vocabulary support in English, Czech, German, French, Spanish, and Polish. Russian and Chinese languages will be added later.</p>
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">Can I change my plan later?</h3>
