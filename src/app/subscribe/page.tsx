@@ -12,7 +12,7 @@ const SUBSCRIPTION_PLANS = {
     name: 'News Article Plan',
     description: 'Access to all News article lessons for adults',
     price: 600, // $6.00 in cents
-    priceId: 'price_1RvfVX1Bs1c9VoEosolWxJlo',
+    priceId: 'price_1S7ETR1Bs1c9VoEoGpZnsbNZ',
     features: [
       'All News article lessons (English only)',
   'Adult-focused current events content',
@@ -28,7 +28,7 @@ const SUBSCRIPTION_PLANS = {
     name: 'Science + Language Support',
     description: 'Science article lessons with multi-language support',
     price: 600, // $6.00 in cents  
-    priceId: 'price_1RvfWo1Bs1c9VoEowauWnLQb',
+    priceId: 'price_1S7ETO1Bs1c9VoEopYgVUIzO',
     features: [
       'All Science article lessons',
       'Beginner and intermediate levels',
@@ -44,7 +44,7 @@ const SUBSCRIPTION_PLANS = {
     name: 'Complete Plan',
     description: 'Everything! ESL + CLIL with language support of your choice',
     price: 900, // $9.00 in cents
-    priceId: 'price_1RvfXm1Bs1c9VoEoYDZuJMog',
+    priceId: 'price_1S7ETH1Bs1c9VoEouBBsNy3q',
     features: [
       'All News article lessons (English only)',
   'All Science article lessons (with language support)', 
@@ -167,29 +167,29 @@ export default function SubscribePage() {
 
   // Helper functions for plan information
   const getPlanName = (priceId: string) => {
-    if (priceId.includes('esl') || priceId === 'price_1RvfVX1Bs1c9VoEosolWxJlo') return 'News article Plan';
-    if (priceId.includes('clil') || priceId === 'price_1RvfWo1Bs1c9VoEowauWnLQb') return 'Science + Language Support';
-    if (priceId.includes('complete') || priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return 'Complete Plan';
+    if (priceId.includes('esl') || priceId === 'price_1S7ETR1Bs1c9VoEoGpZnsbNZ') return 'News article Plan';
+    if (priceId.includes('clil') || priceId === 'price_1S7ETO1Bs1c9VoEopYgVUIzO') return 'Science + Language Support';
+    if (priceId.includes('complete') || priceId === 'price_1S7ETH1Bs1c9VoEouBBsNy3q') return 'Complete Plan';
     return 'Plan';
   };
 
   const getPlanPrice = (priceId: string) => {
-    if (priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return '9'; // Complete Plan
+    if (priceId === 'price_1S7ETH1Bs1c9VoEouBBsNy3q') return '9'; // Complete Plan
     return '6'; // ESL and CLIL Plus
   };
 
   const getPlanTier = (priceId: string) => {
-    if (priceId === 'price_1RvfVX1Bs1c9VoEosolWxJlo') return 'esl_only';
-    if (priceId === 'price_1RvfWo1Bs1c9VoEowauWnLQb') return 'clil_plus';
-    if (priceId === 'price_1RvfXm1Bs1c9VoEoYDZuJMog') return 'complete_plan';
+    if (priceId === 'price_1S7ETR1Bs1c9VoEoGpZnsbNZ') return 'esl_only';
+    if (priceId === 'price_1S7ETO1Bs1c9VoEopYgVUIzO') return 'clil_plus';
+    if (priceId === 'price_1S7ETH1Bs1c9VoEouBBsNy3q') return 'complete_plan';
     return 'free';
   };
 
   // Get the actual price ID based on selected plan
   const getSelectedPriceId = () => {
-    if (selectedPlan === 'esl_only') return 'price_1RvfVX1Bs1c9VoEosolWxJlo';
-    if (selectedPlan === 'clil_plus') return 'price_1RvfWo1Bs1c9VoEowauWnLQb';
-    if (selectedPlan === 'complete_plan') return 'price_1RvfXm1Bs1c9VoEoYDZuJMog';
+    if (selectedPlan === 'esl_only') return 'price_1S7ETR1Bs1c9VoEoGpZnsbNZ';
+    if (selectedPlan === 'clil_plus') return 'price_1S7ETO1Bs1c9VoEopYgVUIzO';
+    if (selectedPlan === 'complete_plan') return 'price_1S7ETH1Bs1c9VoEouBBsNy3q';
     return '';
   };
 
@@ -204,7 +204,7 @@ export default function SubscribePage() {
       const languageForDatabase = selectedLanguage === 'English Only' ? 'English' : selectedLanguage;
       
       // Create Stripe checkout session with all user selections
-      const response = await fetch('/api/create-checkout-session', {
+      const response = await fetch('/api/create-checkout-session-new', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
