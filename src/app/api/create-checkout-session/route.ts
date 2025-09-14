@@ -7,6 +7,13 @@ export async function POST(request: NextRequest) {
   try {
     const { priceId, userId, userPreferences } = await request.json();
 
+    // DEBUG LOGGING - Add these lines
+    console.log('=== CHECKOUT SESSION DEBUG ===');
+    console.log('Received priceId:', priceId);
+    console.log('Received userId:', userId);
+    console.log('Stripe key ending in:', process.env.STRIPE_SECRET_KEY?.slice(-4));
+    console.log('================================');
+
     // Validate required parameters
     if (!priceId || !userId) {
       return NextResponse.json(
@@ -58,6 +65,9 @@ export async function POST(request: NextRequest) {
         .update({ stripe_customer_id: customerId })
         .eq('id', userId);
     }
+
+    // DEBUG LOGGING - Add this line before Stripe call
+    console.log('About to create Stripe session with priceId:', priceId);
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
