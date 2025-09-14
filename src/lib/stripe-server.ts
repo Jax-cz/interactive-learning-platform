@@ -14,7 +14,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'ESL Plan',
     description: 'Access to all ESL news lessons for adults',
     price: 600, // $6.00 in cents
-    priceId: 'price_1RvfVX1Bs1c9VoEosolWxJlo', // Your actual Stripe Price ID
+    priceId: 'price_1S7ETR1Bs1c9VoEoGpZnsbNZ', // Your actual Stripe Price ID
     currency: 'usd',
     interval: 'month',
     features: [
@@ -30,7 +30,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'CLIL + Language Support',
     description: 'CLIL science lessons with multi-language support',
     price: 600, // $6.00 in cents - SAME PRICE AS ESL
-    priceId: 'price_1RvfWo1Bs1c9VoEowauWnLQb', // Your actual Stripe Price ID
+    priceId: 'price_1S7ETO1Bs1c9VoEopYgVUIzO', // Your actual Stripe Price ID
     currency: 'usd', 
     interval: 'month',
     features: [
@@ -47,7 +47,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Complete Plan',
     description: 'Everything! ESL + CLIL with language support of your choice',
     price: 900, // $9.00 in cents - BEST VALUE
-    priceId: 'price_1RvfXm1Bs1c9VoEoYDZuJMog', // Your actual Stripe Price ID
+    priceId: 'price_1S7ETH1Bs1c9VoEouBBsNy3q', // Your actual Stripe Price ID
     currency: 'usd',
     interval: 'month',
     features: [
