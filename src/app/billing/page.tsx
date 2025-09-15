@@ -266,7 +266,7 @@ export default function BillingPage() {
 
               {profile?.subscription_tier === 'esl_only' && (
                 <div className="space-y-2 text-sm text-gray-600">
-                  <p>• All ESL news lessons</p>
+                  <p>• All News lessons</p>
                   <p>• Full progress tracking</p>
                   <p>• Weekly new content</p>
                 </div>
@@ -274,7 +274,7 @@ export default function BillingPage() {
 
               {profile?.subscription_tier === 'clil_plus' && (
                 <div className="space-y-2 text-sm text-gray-600">
-                  <p>• All CLIL science lessons</p>
+                  <p>• All Science lessons</p>
                   <p>• Multi-language support ({profile?.language_support})</p>
                   <p>• Full progress tracking</p>
                   <p>• Weekly new content</p>
@@ -283,7 +283,7 @@ export default function BillingPage() {
 
               {profile?.subscription_tier === 'complete_plan' && (
                 <div className="space-y-2 text-sm text-gray-600">
-                  <p>• All ESL + CLIL lessons</p>
+                  <p>• All News + Science lessons</p>
                   <p>• Multi-language support ({profile?.language_support})</p>
                   <p>• Full progress tracking</p>
                   <p>• Weekly new content</p>
@@ -301,7 +301,7 @@ export default function BillingPage() {
                   </div>
                   <p className="text-sm text-gray-600">
                     {profile?.subscription_status === 'active' 
-                      ? 'Your subscription renews automatically'
+                      ? 'Your subscription renews automatically. If you cancel, you will have full access until the end of your current billing period'
                       : 'Subscription status: ' + profile?.subscription_status
                     }
                   </p>
@@ -338,7 +338,7 @@ export default function BillingPage() {
               className="flex items-center justify-center space-x-2 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Settings className="h-5 w-5" />
-              <span>{processing ? 'Loading...' : 'Change Plan/Cancel Subscription'}</span>
+              <span>{processing ? 'Loading...' : 'Cancel Subscription'}</span>
             </button>
           )}
 
