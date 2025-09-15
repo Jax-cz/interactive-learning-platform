@@ -62,7 +62,7 @@ export default function BillingPage() {
     setProcessing(true);
 
     try {
-      const response = await fetch('/api/create-billing-portal', {
+      const response = await fetch('/api/create-billing-portal-new', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

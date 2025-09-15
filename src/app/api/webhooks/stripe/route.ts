@@ -337,9 +337,9 @@ async function handlePaymentFailed(invoice: any) {
 // Helper function to map Stripe Price ID to plan type
 function getPlanTypeFromPriceId(priceId: string): string {
   const priceToPlansMap: { [key: string]: string } = {
-    'price_1RvfVX1Bs1c9VoEosolWxJlo': 'esl_only',
-    'price_1RvfWo1Bs1c9VoEowauWnLQb': 'clil_plus',
-    'price_1RvfXm1Bs1c9VoEoYDZuJMog': 'complete_plan'
+    'price_1S7ETR1Bs1c9VoEoGpZnsbNZ': 'esl_only',
+    'price_1S7ETO1Bs1c9VoEopYgVUIzO': 'clil_plus',
+    'price_1S7ETH1Bs1c9VoEouBBsNy3q': 'complete_plan'
   };
   
   const planType = priceToPlansMap[priceId];
