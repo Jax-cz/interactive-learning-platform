@@ -204,7 +204,7 @@ const removeMatch = (wordIndex: number) => {
     <div className="flex-1">
       <div className="font-medium text-gray-900">{word.text}</div>
       {isMultiLanguage && showTranslations && word.translation && (
-        <div className="text-sm 800 italic">{word.translation}</div>
+        <div className="text-sm text-800 italic">{word.translation}</div>
       )}
       {matches[index] !== undefined && (
         <div className="text-sm text-gray-800 mt-1">✓ Matched</div>
@@ -248,7 +248,7 @@ const removeMatch = (wordIndex: number) => {
                 >
                   <div>{defItem.text}</div>
                   {isMultiLanguage && showTranslations && defItem.translation && (
-                    <div className="text-sm text-gray-800 italic mt-1">{defItem.translation}</div>
+                    <div className="text-sm text-gray-900 italic mt-1">{defItem.translation}</div>
                   )}
                   {isUsed && <span className="ml-2">✓</span>}
                 </button>
