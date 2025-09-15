@@ -1500,18 +1500,12 @@ const ContinueLearningSection = () => {
                     )}
                     
                     <div className="pt-3 space-y-2">
-                      <button 
-                        onClick={() => router.push('/subscribe?upgrade=true')}
-                        className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                      >
-                        Change Plan
-                      </button>
-                      
+                                            
                       <Link 
                         href="/billing"
                         className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors text-center"
                       >
-                        Manage Billing
+                        Manage Subscription
                       </Link>
                       <a
                         href="https://easylanguagelearning.net/contact"

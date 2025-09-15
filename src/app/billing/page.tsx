@@ -328,7 +328,7 @@ export default function BillingPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 gap-4 mb-6">
           
           {/* Manage Billing */}
           {profile?.subscription_tier !== 'free' && (
@@ -338,18 +338,12 @@ export default function BillingPage() {
               className="flex items-center justify-center space-x-2 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Settings className="h-5 w-5" />
-              <span>{processing ? 'Loading...' : 'Manage/Cancel Billing'}</span>
+              <span>{processing ? 'Loading...' : 'Change Plan/Cancel Subscription'}</span>
             </button>
           )}
 
           {/* Change Plan */}
-          <Link
-            href="/subscribe?upgrade=true"
-            className="flex items-center justify-center space-x-2 px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            <CreditCard className="h-5 w-5" />
-            <span>{profile?.subscription_tier === 'free' ? 'Upgrade Plan' : 'Change Plan'}</span>
-          </Link>
+          
         </div>
 
         {/* Danger Zone - Only for Active Subscriptions */}
