@@ -121,11 +121,9 @@ function PlatformSlideshow() {
             {/* Close button */}
             <button
               onClick={closeFullscreen}
-              className="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-3 rounded-full transition-all z-10"
+              className="absolute top-4 right-4 bg-black bg-opacity-70 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold z-10"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              ✕
             </button>
 
             {/* Fullscreen Image */}
@@ -141,11 +139,9 @@ function PlatformSlideshow() {
                 e.stopPropagation();
                 changeSlide(-1);
               }}
-              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-4 rounded-full transition-all duration-300"
+              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-70 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              ‹
             </button>
             
             <button 
@@ -153,11 +149,9 @@ function PlatformSlideshow() {
                 e.stopPropagation();
                 changeSlide(1);
               }}
-              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-4 rounded-full transition-all duration-300"
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-70 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              ›
             </button>
             
             {/* Slide Counter - Fullscreen */}
