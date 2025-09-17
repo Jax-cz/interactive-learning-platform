@@ -156,7 +156,7 @@ const VocabularyReviewModal: React.FC<VocabularyReviewModalProps> = ({ vocabular
       } else {
         onComplete(Math.round((score + (isCorrect ? 1 : 0)) / vocabularyWords.length * 100));
       }
-    }, 2000);
+    }, 1500);
   };
 
   const getScoreColor = (percentage: number): string => {

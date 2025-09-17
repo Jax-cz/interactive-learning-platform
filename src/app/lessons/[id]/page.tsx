@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { loadLessonProgress, saveLessonSession, clearLessonSession } from '@/lib/auth'; 
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -1495,6 +1496,31 @@ const isLastExerciseBeforeSummary = (currentIndex: number) => {
     fetchLesson();
   }, [params?.id]);
 
+  // Load existing progress when lesson is loaded
+  useEffect(() => {
+    const loadExistingProgress = async () => {
+      if (!lesson?.id) return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const progress = await loadLessonProgress(user.id, lesson.id);
+        if (progress && progress.current_exercise_index > 0) {
+          setCurrentExercise(progress.current_exercise_index || 0);
+          setExerciseProgress(progress.completed_exercises || {});
+        }
+      } catch (error) {
+        console.error('Error loading lesson progress:', error);
+        // On error, stay at exercise 0 (restart)
+      }
+    };
+
+    if (lesson) {
+      loadExistingProgress();
+    }
+  }, [lesson]);
+
   const fetchLesson = async () => {
     try {
       setLoading(true);
@@ -1524,11 +1550,25 @@ const isLastExerciseBeforeSummary = (currentIndex: number) => {
     }
   };
 
-  const markExerciseComplete = (exerciseIndex: number) => {
-    setExerciseProgress(prev => ({
-      ...prev,
-      [exerciseIndex]: true
-    }));
+  const markExerciseComplete = async (exerciseIndex: number) => {
+    const newProgress = { ...exerciseProgress, [exerciseIndex]: true };
+    setExerciseProgress(newProgress);
+    
+    // Save to database immediately
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && lesson) {
+        await saveLessonSession(
+          user.id, 
+          lesson.id, 
+          exerciseIndex + 1, // Next exercise index
+          newProgress
+        );
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      // Continue anyway - don't block user experience
+    }
   };
 
   const getCompletedCount = () => {
@@ -1578,6 +1618,12 @@ const isLastExerciseBeforeSummary = (currentIndex: number) => {
       } else {
         console.log('Progress saved successfully:', data);
       }
+
+      // Clear the session data since lesson is complete
+      if (lesson) {
+        await clearLessonSession(user.id, lesson.id);
+      }
+      
     } catch (error) {
       console.error('Save progress error:', error);
     }
@@ -1801,8 +1847,8 @@ if (!lesson) {
                     questions={lesson.content_data.warmerQuestions}
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={globalShowTranslations}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(1);
                       scrollToLessonContent();
                     }}
@@ -1814,8 +1860,8 @@ if (!lesson) {
                     vocabulary={lesson.content_data.vocabularyPreview}
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={globalShowTranslations}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(2);
                       scrollToLessonContent();
                     }}
@@ -1827,8 +1873,8 @@ if (!lesson) {
                     readingText={lesson.content_data.readingText}
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={globalShowTranslations}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(3);
                       scrollToLessonContent();
                     }}
@@ -1865,8 +1911,8 @@ if (!lesson) {
                   <FindInTextComponent
                     findInText={lesson.content_data.findInText || []}
                     readingText={lesson.content_data.readingText}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
                       scrollToLessonContent();
                     }}
@@ -1877,8 +1923,8 @@ if (!lesson) {
                   <GrammarFocusComponent
                     grammarFocus={lesson.content_data.grammarFocus || []}
                     isLastExercise={isLastExerciseBeforeSummary(currentExercise)}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
                       scrollToLessonContent();
                     }}
@@ -1891,8 +1937,8 @@ if (!lesson) {
                     sequenceInstructions={lesson?.content_data?.sequenceInstructions}
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={globalShowTranslations}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
                       scrollToLessonContent();
                     }}
@@ -1905,8 +1951,8 @@ if (!lesson) {
                     isMultiLanguage={isMultiLanguage}
                     showTranslations={globalShowTranslations}
                     isLastExercise={isLastExerciseBeforeSummary(currentExercise)}
-                    onComplete={() => {
-                      markExerciseComplete(currentExercise);
+                    onComplete={async () => {
+                      await markExerciseComplete(currentExercise);
                       setCurrentExercise(currentExercise + 1);
                       scrollToLessonContent();
                     }}

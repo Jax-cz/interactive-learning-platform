@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { getCurrentUser, getUserProfile, getContentAccess } from '@/lib/auth';
+import { getCurrentUser, getUserProfile, getContentAccess, hasLessonProgress } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { loadLessonsForUser, applyManualFilters } from '@/lib/lessonFiltering';
 
@@ -47,6 +47,7 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
     language: 'all'
   });
   const [showSamples, setShowSamples] = useState(false);
+  const [lessonProgressMap, setLessonProgressMap] = useState<{[key: string]: boolean}>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -82,6 +83,9 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
           .select('*')
           .eq('user_id', currentUser.id);
         setUserProgress(progress || []);
+
+        // Load lesson progress (for resume functionality)
+        
 
         // Calculate progression data (same as dashboard)
         const progression = await calculateProgressionData(currentUser.id, profile);
@@ -538,7 +542,7 @@ if (loading || !isFullyLoaded) {
                                     ? 'Locked' 
                                     : status.status === 'completed' 
                                     ? 'Review Lesson' 
-                                    : 'Start Lesson'
+                                    : 'Start/Resume Lesson'
                                   }
                                 </button>
                               </div>

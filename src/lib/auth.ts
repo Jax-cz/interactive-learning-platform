@@ -412,3 +412,91 @@ export async function changeUserLevel(userId: string, newLevel: 'beginner' | 'in
     return { success: false, error: error.message }
   }
 }
+// Load existing lesson progress
+export async function loadLessonProgress(userId: string, lessonId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('lesson_progress')
+      .select('current_exercise_index, completed_exercises')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error loading lesson progress:', error)
+      return null
+    }
+
+    return data
+  } catch (error: any) {
+    console.error('Load lesson progress error:', error)
+    return null
+  }
+}
+
+// Save current lesson session progress
+// Save current lesson session progress
+export async function saveLessonSession(
+  userId: string, 
+  lessonId: string, 
+  currentExercise: number, 
+  completedExercises: object
+) {
+  try {
+    const { error } = await supabase
+      .from('lesson_progress')
+      .upsert({
+        user_id: userId,
+        lesson_id: lessonId,
+        current_exercise_index: currentExercise,
+        completed_exercises: completedExercises,
+        last_accessed_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,lesson_id'
+      })
+
+    if (error) {
+      console.error('Error saving lesson session:', error)
+    }
+  } catch (error: any) {
+    console.error('Save lesson session error:', error)
+  }
+}
+
+// Clear lesson session when lesson is fully completed
+export async function clearLessonSession(userId: string, lessonId: string) {
+  try {
+    const { error } = await supabase
+      .from('lesson_progress')
+      .delete()
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+
+    if (error) {
+      console.error('Error clearing lesson session:', error)
+    }
+  } catch (error: any) {
+    console.error('Clear lesson session error:', error)
+  }
+}
+// Check if lesson has existing progress
+export async function hasLessonProgress(userId: string, lessonId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('lesson_progress')
+      .select('current_exercise_index')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .single()
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error checking lesson progress:', error)
+      return false
+    }
+
+    return !!(data && data.current_exercise_index > 0)
+  } catch (error: any) {
+    console.error('Check lesson progress error:', error)
+    return false
+  }
+}
