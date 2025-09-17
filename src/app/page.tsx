@@ -6,6 +6,7 @@ import Link from 'next/link';
 // Slideshow Component
 function PlatformSlideshow() {
   const [currentSlide, setCurrentSlide] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const totalSlides = 16;
 
   const changeSlide = (direction: number) => {
@@ -25,67 +26,164 @@ function PlatformSlideshow() {
     setCurrentSlide(slideNumber);
   };
 
+  const openFullscreen = () => {
+    setIsFullscreen(true);
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  };
+
+  const closeFullscreen = () => {
+    setIsFullscreen(false);
+    document.body.style.overflow = 'unset'; // Restore scrolling
+  };
+
   return (
-    <div className="mb-12 bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div className="text-center py-8 px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-          See How It Works
-        </h2>
-        <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-          Take a guided tour of our interactive learning platform
-        </p>
-        
-        {/* Slideshow Container */}
-        <div className="relative max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+    <>
+      <div className="mb-12 bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="text-center py-8 px-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+            See How It Works
+          </h2>
+          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+            Take a guided tour of our interactive learning platform
+          </p>
           
-          {/* Current Slide */}
-          <div className="relative">
-            <img 
-              src={`/slides/${currentSlide}.png`} 
-              alt={`Platform Demo - Step ${currentSlide}`} 
-              className="w-full h-auto" 
-            />
-          </div>
-          
-          {/* Navigation Buttons */}
-          <button 
-            onClick={() => changeSlide(-1)}
-            className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-3 rounded-full transition-all duration-300 hover:scale-110"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          
-          <button 
-            onClick={() => changeSlide(1)}
-            className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-3 rounded-full transition-all duration-300 hover:scale-110"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          
-          {/* Slide Counter */}
-          <div className="absolute bottom-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm">
-            {currentSlide} / {totalSlides}
-          </div>
-          
-          {/* Dots Navigation */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-            {[...Array(totalSlides)].map((_, index) => (
-              <button
-                key={index + 1}
-                onClick={() => goToSlide(index + 1)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index + 1 === currentSlide ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'
-                }`}
+          {/* Slideshow Container */}
+          <div className="relative max-w-2xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+            
+            {/* Current Slide */}
+            <div className="relative cursor-pointer" onClick={openFullscreen}>
+              <img 
+                src={`/slides/${currentSlide}.png`} 
+                alt={`Platform Demo - Step ${currentSlide}`} 
+                className="w-full h-auto" 
               />
-            ))}
+              
+              {/* Mobile tap indicator */}
+              <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs md:hidden">
+                Tap to expand
+              </div>
+            </div>
+            
+            {/* Navigation Buttons */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                changeSlide(-1);
+              }}
+              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-3 rounded-full transition-all duration-300 hover:scale-110"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                changeSlide(1);
+              }}
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-3 rounded-full transition-all duration-300 hover:scale-110"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            
+            {/* Slide Counter */}
+            <div className="absolute bottom-4 right-4 bg-black bg-opacity-70 text-white px-3 py-1 rounded-full text-sm">
+              {currentSlide} / {totalSlides}
+            </div>
+            
+            {/* Dots Navigation */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+              {[...Array(totalSlides)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToSlide(index + 1);
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index + 1 === currentSlide ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Full-screen Modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full h-full max-w-4xl max-h-full flex items-center justify-center">
+            
+            {/* Close button */}
+            <button
+              onClick={closeFullscreen}
+              className="absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-3 rounded-full transition-all z-10"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Fullscreen Image */}
+            <img 
+              src={`/slides/${currentSlide}.png`} 
+              alt={`Platform Demo - Step ${currentSlide}`} 
+              className="max-w-full max-h-full object-contain" 
+            />
+            
+            {/* Navigation Buttons - Fullscreen */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                changeSlide(-1);
+              }}
+              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-4 rounded-full transition-all duration-300"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                changeSlide(1);
+              }}
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-4 rounded-full transition-all duration-300"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            
+            {/* Slide Counter - Fullscreen */}
+            <div className="absolute bottom-8 right-8 bg-black bg-opacity-70 text-white px-4 py-2 rounded-full">
+              {currentSlide} / {totalSlides}
+            </div>
+            
+            {/* Dots Navigation - Fullscreen */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
+              {[...Array(totalSlides)].map((_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToSlide(index + 1);
+                  }}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index + 1 === currentSlide ? 'bg-blue-600' : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
