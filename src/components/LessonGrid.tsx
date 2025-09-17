@@ -85,7 +85,20 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
         setUserProgress(progress || []);
 
         // Load lesson progress (for resume functionality)
-        
+        // Load lesson progress (batch load all at once)
+        const { data: allLessonProgress } = await supabase
+          .from('lesson_progress')
+          .select('lesson_id, current_exercise_index')
+          .eq('user_id', currentUser.id)
+          .gt('current_exercise_index', 0);
+
+        if (allLessonProgress) {
+          const progressMap: {[key: string]: boolean} = {};
+          allLessonProgress.forEach(progress => {
+            progressMap[progress.lesson_id] = true;
+          });
+          setLessonProgressMap(progressMap);
+        }
 
         // Calculate progression data (same as dashboard)
         const progression = await calculateProgressionData(currentUser.id, profile);
@@ -541,8 +554,10 @@ if (loading || !isFullyLoaded) {
                                   {status.locked 
                                     ? 'Locked' 
                                     : status.status === 'completed' 
-                                    ? 'Review Lesson' 
-                                    : 'Start/Resume Lesson'
+                                    ? 'Repeat Lesson' 
+                                    : lessonProgressMap[lesson.id]
+                                    ? 'Resume Lesson'
+                                    : 'Start Lesson'
                                   }
                                 </button>
                               </div>
