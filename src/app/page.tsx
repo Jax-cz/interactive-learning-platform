@@ -121,7 +121,7 @@ function PlatformSlideshow() {
             {/* Close button */}
             <button
               onClick={closeFullscreen}
-              className="absolute top-4 right-4 bg-black bg-opacity-70 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold z-10"
+              className="absolute top-4 right-4 bg-black bg-opacity-50 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold z-10"
             >
               ✕
             </button>
@@ -139,7 +139,7 @@ function PlatformSlideshow() {
                 e.stopPropagation();
                 changeSlide(-1);
               }}
-              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-70 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
+              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-40 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
             >
               ‹
             </button>
@@ -149,7 +149,7 @@ function PlatformSlideshow() {
                 e.stopPropagation();
                 changeSlide(1);
               }}
-              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-70 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
+              className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-40 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold"
             >
               ›
             </button>
