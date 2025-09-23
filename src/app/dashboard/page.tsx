@@ -565,13 +565,24 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
     try {
       const { data: completedLessons, error: progressError } = await supabase
         .from('user_progress')
-        .select('lesson_id, is_completed')
+        .select(`
+          lesson_id, 
+          is_completed,
+          lessons!inner(week_number)
+        `)
         .eq('user_id', userId)
         .eq('is_completed', true);
 
       if (progressError) throw progressError;
 
-      const totalCompleted = completedLessons?.length || 0;
+      // Filter out sample lessons (week > 995) from completed count
+      const regularCompletedLessons = completedLessons?.filter(
+        (lesson: any) => {
+          const lessonData = Array.isArray(lesson.lessons) ? lesson.lessons[0] : lesson.lessons;
+          return lessonData?.week_number <= 995;
+        }
+      ) || [];
+      const totalCompleted = regularCompletedLessons.length;
       const joinDate = new Date(userProfile?.created_at || new Date());
       const currentDate = new Date();
       const weeksSinceJoin = Math.floor((currentDate.getTime() - joinDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
