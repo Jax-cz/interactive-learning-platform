@@ -145,7 +145,7 @@ const regularCompletedLessons = completedLessons?.filter(
         .single();
 
       const currentWeek = latestLesson?.week_number || 1;
-      const starterPack = 5;
+      const starterPack = 4;
       let availableLessons = starterPack;
       const weeksBehind = currentWeek - weeksSinceJoin;
       const unlockRate = weeksBehind > 4 ? 2 : 1;

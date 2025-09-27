@@ -597,7 +597,7 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
         .single();
 
       const currentWeek = latestLesson?.week_number || 1;
-      const starterPack = 5;
+      const starterPack = 4;
       let availableLessons = starterPack;
       const weeksBehind = currentWeek - weeksSinceJoin;
       // Calculate base unlock rate based on subscription
