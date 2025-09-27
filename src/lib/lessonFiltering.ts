@@ -82,7 +82,7 @@ const totalCompleted = completedLessons?.filter((progress: any) =>
 
     return {
       total_completed: totalCompleted,
-      available_lessons: canUnlockMore ? availableLessons : totalCompleted + 3,
+      available_lessons: canUnlockMore ? availableLessons : totalCompleted + starterPack,
       unlock_rate: unlockRate,
       weeks_since_join: weeksSinceJoin,
       current_week: currentWeek,
