@@ -136,35 +136,40 @@ const regularCompletedLessons = completedLessons?.filter(
       const weeksSinceJoin = Math.floor((currentDate.getTime() - joinDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
       const { data: latestLesson } = await supabase
-        .from('lessons')
-        .select('week_number')
-        .eq('is_published', true)
-        .lte('week_number', 995)
-        .order('week_number', { ascending: false })
-        .limit(1)
-        .single();
+  .from('lessons')
+  .select('week_number')
+  .eq('is_published', true)
+  .lte('week_number', 995)
+  .order('week_number', { ascending: false })
+  .limit(1)
+  .single();
 
-      const currentWeek = latestLesson?.week_number || 1;
-      const starterPack = 4;
-      let availableLessons = starterPack;
-      const weeksBehind = currentWeek - weeksSinceJoin;
-      const unlockRate = weeksBehind > 4 ? 2 : 1;
-      const additionalWeeks = Math.max(0, weeksSinceJoin - 1);
-      availableLessons += additionalWeeks * unlockRate;
-      availableLessons = Math.min(availableLessons, currentWeek);
+const currentWeek = latestLesson?.week_number || 1;
 
-      const lessonsNeededForUnlock = Math.max(0, availableLessons - 3 - totalCompleted);
-      const canUnlockMore = lessonsNeededForUnlock === 0;
+// Calculate base unlock rate (simplified for LessonGrid - assumes complete plan)
+const baseUnlockRate = 2;
+
+// A new user starts with access to weeks 1-2
+const initialWeeksAccess = 2;
+const weeksUserShouldHave = Math.min(initialWeeksAccess + Math.max(0, weeksSinceJoin - 1), currentWeek);
+const weeksBehind = Math.max(0, currentWeek - weeksUserShouldHave);
+const isBehind = weeksBehind > 0;
+
+// Calculate available weeks - simplified approach
+const availableWeeks = weeksUserShouldHave;
+const availableLessons = availableWeeks * baseUnlockRate;
+const lessonsNeededForUnlock = 0;
+const canUnlockMore = true;
 
       return {
-        total_completed: totalCompleted,
-        available_lessons: canUnlockMore ? availableLessons : totalCompleted + starterPack,
-        unlock_rate: unlockRate,
-        weeks_since_join: weeksSinceJoin,
-        current_week: currentWeek,
-        lessons_needed_for_unlock: lessonsNeededForUnlock,
-        is_caught_up: availableLessons >= currentWeek - 2
-      };
+  total_completed: totalCompleted,
+  available_lessons: availableLessons,
+  unlock_rate: baseUnlockRate,
+  weeks_since_join: weeksSinceJoin,
+  current_week: currentWeek,
+  lessons_needed_for_unlock: lessonsNeededForUnlock,
+  is_caught_up: !isBehind
+};
     } catch (error) {
       console.error('Error calculating progression:', error);
       return {

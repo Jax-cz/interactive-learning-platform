@@ -597,40 +597,40 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
         .single();
 
       const currentWeek = latestLesson?.week_number || 1;
-      const starterPack = 4;
-      let availableLessons = starterPack;
-      const weeksBehind = currentWeek - weeksSinceJoin;
       // Calculate base unlock rate based on subscription
 let baseUnlockRate = 1; // Default for single content type
 if (contentAccess?.canAccessESL && contentAccess?.canAccessCLIL) {
   baseUnlockRate = 2; // Complete plan needs both ESL and CLIL
 }
 
-// Apply catch-up multiplier if behind
-const unlockRate = weeksBehind > 4 ? baseUnlockRate * 2 : baseUnlockRate;
-      const additionalWeeks = Math.max(0, weeksSinceJoin - 1);
-      availableLessons += additionalWeeks * unlockRate;
-      availableLessons = Math.min(availableLessons, currentWeek);
+// A new user starts with access to weeks 1-2
+const initialWeeksAccess = 2;
+const weeksUserShouldHave = Math.min(initialWeeksAccess + Math.max(0, weeksSinceJoin - 1), currentWeek);
+const weeksBehind = Math.max(0, currentWeek - weeksUserShouldHave);
+const isBehind = weeksBehind > 0;
 
-      const lessonsNeededForUnlock = Math.max(0, availableLessons - 3 - totalCompleted);
-      const canUnlockMore = lessonsNeededForUnlock === 0;
+// Calculate available weeks - simplified approach
+const availableWeeks = weeksUserShouldHave;
+const availableLessons = availableWeeks * baseUnlockRate;
+const lessonsNeededForUnlock = 0;
+const canUnlockMore = true;
+const unlockRate = baseUnlockRate; // Always normal rate
 
       const nextMonday = new Date();
       nextMonday.setDate(nextMonday.getDate() + (7 - nextMonday.getDay() + 1) % 7);
       const daysUntilNextUnlock = Math.ceil((nextMonday.getTime() - currentDate.getTime()) / (24 * 60 * 60 * 1000));
 
-      const isCaughtUp = availableLessons >= currentWeek - 2;
-
+      
       return {
-        total_completed: totalCompleted,
-        available_lessons: canUnlockMore ? availableLessons : totalCompleted + starterPack,
-        unlock_rate: unlockRate,
-        weeks_since_join: weeksSinceJoin,
-        current_week: currentWeek,
-        days_until_next_unlock: daysUntilNextUnlock,
-        lessons_needed_for_unlock: lessonsNeededForUnlock,
-        is_caught_up: isCaughtUp
-      };
+  total_completed: totalCompleted,
+  available_lessons: availableLessons,
+  unlock_rate: unlockRate,
+  weeks_since_join: weeksSinceJoin,
+  current_week: currentWeek,
+  days_until_next_unlock: daysUntilNextUnlock,
+  lessons_needed_for_unlock: lessonsNeededForUnlock,
+  is_caught_up: !isBehind
+};
 
     } catch (error) {
       console.error('Error calculating progression:', error);
@@ -653,6 +653,14 @@ const loadLessonsWithProgression = async (userId: string, access: any, progressi
     return;
   }
   
+// ADD THIS DEBUG CODE HERE
+  console.log('Dashboard loading lessons:', {
+    profile: userProfile?.preferred_level,
+    access: access,
+    progression: progression?.available_lessons,
+    progressionDetails: progression
+  });
+
   try {
     console.log('🔍 Dashboard loading lessons:', {
       profile: userProfile?.preferred_level,
