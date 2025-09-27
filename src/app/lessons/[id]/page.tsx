@@ -419,7 +419,7 @@ interface MultiTrueFalseComponentProps {
   showTranslations: boolean;
 }
 
-function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: MultiTrueFalseComponentProps) {
+function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage, showTranslations }: MultiTrueFalseComponentProps) {
   const [answers, setAnswers] = useState<{[key: number]: boolean | null}>({});
   const [showResults, setShowResults] = useState(false);
 
@@ -462,7 +462,7 @@ function MultiTrueFalseComponent({ questions, onComplete, isMultiLanguage }: Mul
             <div key={index} className="p-4 border border-gray-200 rounded-lg">
               <div className="mb-3">
                 <p className="text-gray-800">{parsed.english}</p>
-                {isMultiLanguage && parsed.translation && (
+                {isMultiLanguage && showTranslations && parsed.translation && (
                   <p className="text-gray-800 text-sm italic mt-1">{parsed.translation}</p>
                 )}
               </div>
@@ -1969,7 +1969,7 @@ if (!lesson) {
                           lesson.content_data.summary
                         }
                       </p>
-                      {isMultiLanguage && lesson.content_data.summary.match(/^\[.+?\]-\[(.+?)\]$/)?.[1] && (
+                      {isMultiLanguage && globalShowTranslations && lesson.content_data.summary.match(/^\[.+?\]-\[(.+?)\]$/)?.[1] && (
                         <p className="text-blue-700 text-sm italic mt-2">
                           {lesson.content_data.summary.match(/^\[.+?\]-\[(.+?)\]$/)?.[1]}
                         </p>
