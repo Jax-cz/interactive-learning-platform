@@ -534,7 +534,7 @@ const access = await getContentAccess(currentUser.id);
 setContentAccess(access);
 
 await loadProgress(currentUser.id);
-const progression = await calculateProgressionData(currentUser.id, userProfile);
+const progression = await calculateProgressionData(currentUser.id, userProfile, access);
 setProgressionData(progression);
 
 // Load enhanced features first
@@ -561,7 +561,7 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
     setVocabularyData(vocabData);
   };
 
-  const calculateProgressionData = async (userId: string, userProfile: UserProfile | null): Promise<ProgressionData> => {
+  const calculateProgressionData = async (userId: string, userProfile: any, contentAccess: any) => {
     try {
       const { data: completedLessons, error: progressError } = await supabase
         .from('user_progress')
@@ -600,7 +600,14 @@ await loadLessonsWithProgression(currentUser.id, access, progression, userProfil
       const starterPack = 5;
       let availableLessons = starterPack;
       const weeksBehind = currentWeek - weeksSinceJoin;
-      const unlockRate = weeksBehind > 4 ? 2 : 1;
+      // Calculate base unlock rate based on subscription
+let baseUnlockRate = 1; // Default for single content type
+if (contentAccess?.canAccessESL && contentAccess?.canAccessCLIL) {
+  baseUnlockRate = 2; // Complete plan needs both ESL and CLIL
+}
+
+// Apply catch-up multiplier if behind
+const unlockRate = weeksBehind > 4 ? baseUnlockRate * 2 : baseUnlockRate;
       const additionalWeeks = Math.max(0, weeksSinceJoin - 1);
       availableLessons += additionalWeeks * unlockRate;
       availableLessons = Math.min(availableLessons, currentWeek);

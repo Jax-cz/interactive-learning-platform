@@ -113,10 +113,22 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
   const calculateProgressionData = async (userId: string, userProfile: any) => {
     try {
       const { data: completedLessons } = await supabase
-        .from('user_progress')
-        .select('lesson_id, is_completed')
-        .eq('user_id', userId)
-        .eq('is_completed', true);
+  .from('user_progress')
+  .select(`
+    lesson_id, 
+    is_completed,
+    lessons!inner(week_number)
+  `)
+  .eq('user_id', userId)
+  .eq('is_completed', true);
+
+// Filter out sample lessons (week > 995) from completed count
+const regularCompletedLessons = completedLessons?.filter(
+  (lesson: any) => {
+    const lessonData = Array.isArray(lesson.lessons) ? lesson.lessons[0] : lesson.lessons;
+    return lessonData?.week_number <= 995;
+  }
+) || [];
 
       const totalCompleted = completedLessons?.length || 0;
       const joinDate = new Date(userProfile?.created_at || new Date());
@@ -127,6 +139,7 @@ export default function LessonGrid({ admin = false }: LessonGridProps) {
         .from('lessons')
         .select('week_number')
         .eq('is_published', true)
+        .lte('week_number', 995)
         .order('week_number', { ascending: false })
         .limit(1)
         .single();
