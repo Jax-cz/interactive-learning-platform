@@ -1454,8 +1454,18 @@ export default function LessonPage() {
   const [globalShowTranslations, setGlobalShowTranslations] = useState(false);
 
   // Determine if this is a multi-language lesson (CLIL with translation support)
-  const isMultiLanguage = lesson?.content_type === 'clil' && lesson?.language_support !== 'English';
-  const shouldShowTranslations = isMultiLanguage;
+const isMultiLanguage = lesson?.content_type === 'clil' && lesson?.language_support !== 'English';
+
+// Set translations ON for sample lessons when lesson loads
+useEffect(() => {
+  if (lesson && isMultiLanguage) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isSample = urlParams.get('sample') === 'true';
+    if (isSample) {
+      setGlobalShowTranslations(true);
+    }
+  }
+}, [lesson, isMultiLanguage]);
 
   const exercises = [
     { id: 0, name: 'Warm-up Questions', type: 'warmer' },
@@ -1995,11 +2005,22 @@ if (!lesson) {
                       }}
                       className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors w-full text-center mx-auto block"
                     >
-                      {new URLSearchParams(window.location.search).get('sample') === 'true' 
-                        ? 'Get Full Access →' 
-                        : 'Complete Lesson ✓'
-                      }
-                    </button>
+  {new URLSearchParams(window.location.search).get('sample') === 'true' 
+    ? (
+        <div className="text-center">
+          <div className="font-bold mb-2">Congratulations 🎉</div>
+          <div className="text-sm mb-2">You have just completed our Sample Lesson. We have 20+ lessons available</div>
+          <div className="text-left mx-auto" style={{maxWidth: '400px'}}>
+            <div className="text-sm">✅ News Articles (English only)</div>
+            <div className="text-sm">✅ Science Articles (with Polish/Czech/German/Spanish and French support)</div>
+            <div className="text-sm mb-2">✅ Beginner & Intermediate levels</div>
+          </div>
+          <div className="font-semibold">Get Full Access →</div>
+        </div>
+      )
+    : 'Complete Lesson ✓'
+  }
+</button>
                   </div>
                 )}
 
