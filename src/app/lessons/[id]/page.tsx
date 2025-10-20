@@ -1454,18 +1454,8 @@ export default function LessonPage() {
   const [globalShowTranslations, setGlobalShowTranslations] = useState(false);
 
   // Determine if this is a multi-language lesson (CLIL with translation support)
-const isMultiLanguage = lesson?.content_type === 'clil' && lesson?.language_support !== 'English';
-
-// Set translations ON for sample lessons when lesson loads
-useEffect(() => {
-  if (lesson && isMultiLanguage) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const isSample = urlParams.get('sample') === 'true';
-    if (isSample) {
-      setGlobalShowTranslations(true);
-    }
-  }
-}, [lesson, isMultiLanguage]);
+  const isMultiLanguage = lesson?.content_type === 'clil' && lesson?.language_support !== 'English';
+  const shouldShowTranslations = isMultiLanguage;
 
   const exercises = [
     { id: 0, name: 'Warm-up Questions', type: 'warmer' },
